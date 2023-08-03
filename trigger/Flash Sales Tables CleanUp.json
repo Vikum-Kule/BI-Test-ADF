@@ -10,9 +10,14 @@
 					"type": "PipelineReference"
 				},
 				"parameters": {
+					"KeyVault_URL": "https://PR-EVAL-BI-Key-Vault.vault.azure.net/",
 					"OperationalDBConnectionString": "Enactor-OperationalDB-ConnectionString",
 					"DataWarehouseDBConnectionStringKey": "EnactorBI-DataWarehouseDB-ConnectionString",
 					"StagingDBConnectionStringKey": "EnactorBI-StagingDB-ConnectionString",
+					"TenantID": "0e81f23b-8b67-4f1f-832b-ee8815c8ef62",
+					"SubscriptionID": "89cee0ec-2e9e-4738-8b18-d3cc5a29c156",
+					"Region": "uksouth",
+					"Server": "prevalas001",
 					"DatabaseName": "FlashSales"
 				}
 			}

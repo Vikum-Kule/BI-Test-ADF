@@ -90,10 +90,6 @@
 						]
 					}
 				],
-				"policy": {
-					"secureOutput": false,
-					"secureInput": false
-				},
 				"userProperties": [],
 				"typeProperties": {
 					"variableName": "LastExtractDate",
@@ -1180,7 +1176,7 @@
 		"parameters": {
 			"KeyVault_URL": {
 				"type": "string",
-				"defaultValue": "https://en-bi-kv-demo01.vault.azure.net/"
+				"defaultValue": "https://PR-EVAL-BI-Key-Vault.vault.azure.net/"
 			},
 			"OperationalDBConnectionStringKey": {
 				"type": "string",
@@ -1199,8 +1195,6 @@
 		"folder": {
 			"name": "Flash_Sales_ETL_Pipelines/OperationalToStaging"
 		},
-		"annotations": [],
-		"lastPublishTime": "2023-07-31T11:16:01Z"
-	},
-	"type": "Microsoft.DataFactory/factories/pipelines"
+		"annotations": []
+	}
 }

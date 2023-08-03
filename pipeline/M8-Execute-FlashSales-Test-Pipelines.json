@@ -305,7 +305,7 @@
 		"parameters": {
 			"KeyVault_URL": {
 				"type": "string",
-				"defaultValue": "https://en-bi-kv-demo01.vault.azure.net/"
+				"defaultValue": "https://PR-EVAL-BI-Key-Vault.vault.azure.net/"
 			},
 			"OperationalDBConnectionString": {
 				"type": "string",
@@ -321,11 +321,11 @@
 			},
 			"TenantID": {
 				"type": "string",
-				"defaultValue": "1d10e28a-ceee-4836-9493-c5bbbb817996"
+				"defaultValue": "0e81f23b-8b67-4f1f-832b-ee8815c8ef62"
 			},
 			"SubscriptionID": {
 				"type": "string",
-				"defaultValue": "33fb0613-d250-4bb2-ba76-4385eca3d510"
+				"defaultValue": "89cee0ec-2e9e-4738-8b18-d3cc5a29c156"
 			},
 			"Region": {
 				"type": "string",
@@ -333,18 +333,16 @@
 			},
 			"Server": {
 				"type": "string",
-				"defaultValue": "enbiasdemo01"
+				"defaultValue": "prevalas001"
 			},
 			"DatabaseName": {
 				"type": "string",
-				"defaultValue": "EnactorRetailSales"
+				"defaultValue": "FlashSales"
 			}
 		},
 		"folder": {
 			"name": "Flash_Sales_ETL_Pipelines/Flash_Sales_Test_Pipelines"
 		},
-		"annotations": [],
-		"lastPublishTime": "2023-07-31T11:16:03Z"
-	},
-	"type": "Microsoft.DataFactory/factories/pipelines"
+		"annotations": []
+	}
 }

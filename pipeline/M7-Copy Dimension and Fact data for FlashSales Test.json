@@ -169,7 +169,7 @@
 		"parameters": {
 			"KeyVault_URL": {
 				"type": "string",
-				"defaultValue": "https://en-bi-kv-demo01.vault.azure.net/"
+				"defaultValue": "https://PR-EVAL-BI-Key-Vault.vault.azure.net/"
 			},
 			"OperationalDBConnectionString": {
 				"type": "string",
@@ -187,8 +187,6 @@
 		"folder": {
 			"name": "Flash_Sales_ETL_Pipelines/Flash_Sales_Test_Pipelines"
 		},
-		"annotations": [],
-		"lastPublishTime": "2023-07-31T11:16:03Z"
-	},
-	"type": "Microsoft.DataFactory/factories/pipelines"
+		"annotations": []
+	}
 }

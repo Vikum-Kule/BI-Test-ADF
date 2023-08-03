@@ -13,7 +13,13 @@
 				"parameters": {
 					"StagingDBConnectionStringKey": "EnactorBI-StagingDB-ConnectionString",
 					"DataWarehouseDBConnectionStringKey": "EnactorBI-DataWarehouseDB-ConnectionString",
-					"OperationalDBConnectionString": "Enactor-OperationalDB-ConnectionString"
+					"OperationalDBConnectionString": "Enactor-OperationalDB-ConnectionString",
+					"KeyVault_URL": "https://en-bi-kv-demo01.vault.azure.net/",
+					"TenantID": "1d10e28a-ceee-4836-9493-c5bbbb817996",
+					"SubscriptionID": "33fb0613-d250-4bb2-ba76-4385eca3d510",
+					"Region": "uksouth",
+					"Server": "enbiasdemo01",
+					"DatabaseName": "Enactor Retail Sales"
 				}
 			}
 		],

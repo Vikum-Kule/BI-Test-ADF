@@ -18,7 +18,7 @@
 		"parameters": {
 			"KeyVault_URL": {
 				"type": "string",
-				"defaultValue": "https://en-bi-kv-demo01.vault.azure.net/"
+				"defaultValue": "https://PR-EVAL-BI-Key-Vault.vault.azure.net/"
 			},
 			"ConnectionStringKey": {
 				"type": "string",
@@ -221,6 +221,5 @@
 			"schema": "dbo",
 			"table": "FactFlashSales"
 		}
-	},
-	"type": "Microsoft.DataFactory/factories/datasets"
+	}
 }

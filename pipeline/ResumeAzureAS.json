@@ -34,12 +34,8 @@
 						"Dummy": "Dummy"
 					},
 					"authentication": {
-						"resource": "https://management.azure.com/",
-						"credential": {
-							"referenceName": "BI_App_User",
-							"type": "CredentialReference"
-						},
-						"userTenant": "1d10e28a-ceee-4836-9493-c5bbbb817996"
+						"type": "MSI",
+						"resource": "https://management.azure.com/"
 					}
 				}
 			},
@@ -68,12 +64,8 @@
 						"Dummy": "Dummy"
 					},
 					"authentication": {
-						"resource": "https://management.azure.com/",
-						"credential": {
-							"referenceName": "BI_App_User",
-							"type": "CredentialReference"
-						},
-						"userTenant": "1d10e28a-ceee-4836-9493-c5bbbb817996"
+						"type": "MSI",
+						"resource": "https://management.azure.com/"
 					}
 				}
 			},
@@ -120,12 +112,8 @@
 									"Dummy": "Dummy"
 								},
 								"authentication": {
-									"resource": "https://management.azure.com/",
-									"credential": {
-										"referenceName": "BI_App_User",
-										"type": "CredentialReference"
-									},
-									"userTenant": "1d10e28a-ceee-4836-9493-c5bbbb817996"
+									"type": "MSI",
+									"resource": "https://management.azure.com/"
 								}
 							}
 						}
@@ -136,22 +124,22 @@
 		"parameters": {
 			"SubscriptionID": {
 				"type": "String",
-				"defaultValue": "33fb0613-d250-4bb2-ba76-4385eca3d510"
+				"defaultValue": "89cee0ec-2e9e-4738-8b18-d3cc5a29c156"
 			},
 			"Server": {
 				"type": "String",
-				"defaultValue": "enbiasdemo01"
+				"defaultValue": "prevalas001"
 			},
 			"ResourceGroupName": {
 				"type": "string",
-				"defaultValue": "en-bi-rg-demo01"
+				"defaultValue": "PR_EVAL_BI"
 			}
 		},
 		"folder": {
 			"name": "Azure AS"
 		},
 		"annotations": [],
-		"lastPublishTime": "2023-08-02T08:05:54Z"
+		"lastPublishTime": "2022-02-15T18:11:37Z"
 	},
 	"type": "Microsoft.DataFactory/factories/pipelines"
 }

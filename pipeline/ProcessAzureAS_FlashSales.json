@@ -211,11 +211,11 @@
 		"parameters": {
 			"TenantID": {
 				"type": "String",
-				"defaultValue": "1d10e28a-ceee-4836-9493-c5bbbb817996"
+				"defaultValue": "0e81f23b-8b67-4f1f-832b-ee8815c8ef62"
 			},
 			"SubscriptionID": {
 				"type": "String",
-				"defaultValue": "33fb0613-d250-4bb2-ba76-4385eca3d510"
+				"defaultValue": "89cee0ec-2e9e-4738-8b18-d3cc5a29c156"
 			},
 			"Region": {
 				"type": "String",
@@ -223,18 +223,18 @@
 			},
 			"Server": {
 				"type": "String",
-				"defaultValue": "enbiasdemo01"
+				"defaultValue": "prevalas001"
 			},
 			"DatabaseName": {
 				"type": "String",
-				"defaultValue": "EnactorRetailSales"
+				"defaultValue": "FlashSales"
 			}
 		},
 		"folder": {
 			"name": "Azure AS"
 		},
 		"annotations": [],
-		"lastPublishTime": "2023-07-31T11:16:01Z"
+		"lastPublishTime": "2022-02-15T18:11:37Z"
 	},
 	"type": "Microsoft.DataFactory/factories/pipelines"
 }

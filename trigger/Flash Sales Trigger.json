@@ -10,6 +10,7 @@
 					"type": "PipelineReference"
 				},
 				"parameters": {
+					"KeyVault_URL": "https://PR-EVAL-BI-Key-Vault.vault.azure.net/",
 					"OperationalDBConnectionString": "Enactor-OperationalDB-ConnectionString",
 					"DataWarehouseDBConnectionStringKey": "EnactorBI-DataWarehouseDB-ConnectionString",
 					"StagingDBConnectionStringKey": "EnactorBI-StagingDB-ConnectionString"
