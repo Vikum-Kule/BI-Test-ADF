@@ -18,7 +18,7 @@
 		"parameters": {
 			"KeyVault_URL": {
 				"type": "string",
-				"defaultValue": "https://PR-EVAL-BI-Key-Vault.vault.azure.net/"
+				"defaultValue": "https://en-bi-kv-demo01.vault.azure.net/"
 			},
 			"ConnectionStringKey": {
 				"type": "string",
@@ -154,5 +154,6 @@
 			"schema": "dbo",
 			"table": "CashSessions_Staging_Full"
 		}
-	}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
 }

@@ -219,6 +219,8 @@
 		"folder": {
 			"name": "OperationalToStaging"
 		},
-		"annotations": []
-	}
+		"annotations": [],
+		"lastPublishTime": "2023-08-02T13:04:20Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
 }

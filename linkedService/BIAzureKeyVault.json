@@ -1,10 +1,11 @@
 {
 	"name": "BIAzureKeyVault",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
 	"properties": {
 		"parameters": {
 			"KeyVault_URL": {
 				"type": "string",
-				"defaultValue": "https://PR-EVAL-BI-Key-Vault.vault.azure.net/"
+				"defaultValue": "https://en-bi-kv-demo01.vault.azure.net/"
 			}
 		},
 		"annotations": [],
@@ -12,10 +13,9 @@
 		"typeProperties": {
 			"baseUrl": "@{linkedService().KeyVault_URL}",
 			"credential": {
-				"referenceName": "adf_mi_001",
-				"type": "CredentialReference"
+				"type": "CredentialReference",
+				"referenceName": "en-bi-mi-demo01"
 			}
 		}
-	},
-	"type": "Microsoft.DataFactory/factories/linkedservices"
+	}
 }

@@ -90,6 +90,10 @@
 						]
 					}
 				],
+				"policy": {
+					"secureOutput": false,
+					"secureInput": false
+				},
 				"userProperties": [],
 				"typeProperties": {
 					"variableName": "LastExtractDate",
@@ -375,7 +379,7 @@
 			},
 			"KeyVault_URL": {
 				"type": "string",
-				"defaultValue": "https://PR-EVAL-BI-Key-Vault.vault.azure.net/"
+				"defaultValue": "https://en-bi-kv-demo01.vault.azure.net/"
 			}
 		},
 		"variables": {
@@ -387,7 +391,7 @@
 			"name": "OperationalToStaging"
 		},
 		"annotations": [],
-		"lastPublishTime": "2022-10-05T07:08:38Z"
+		"lastPublishTime": "2023-07-31T11:16:02Z"
 	},
 	"type": "Microsoft.DataFactory/factories/pipelines"
 }

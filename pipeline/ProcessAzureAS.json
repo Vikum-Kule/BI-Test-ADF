@@ -43,10 +43,18 @@
 									"value": "@concat('https://',pipeline().parameters.Region,'.asazure.windows.net/servers/',pipeline().parameters.Server,'/models/',pipeline().parameters.DatabaseName,'/refreshes/',activity('FilterToCurrentRefresh').output.Value[0].refreshId)",
 									"type": "Expression"
 								},
+								"connectVia": {
+									"referenceName": "AutoResolveIntegrationRuntime",
+									"type": "IntegrationRuntimeReference"
+								},
 								"method": "GET",
 								"authentication": {
-									"type": "MSI",
-									"resource": "https://*.asazure.windows.net"
+									"resource": "https://*.asazure.windows.net",
+									"credential": {
+										"referenceName": "BI_App_User",
+										"type": "CredentialReference"
+									},
+									"userTenant": "1d10e28a-ceee-4836-9493-c5bbbb817996"
 								}
 							}
 						},
@@ -91,8 +99,12 @@
 						"RetryCount": 2
 					},
 					"authentication": {
-						"type": "MSI",
-						"resource": "https://*.asazure.windows.net"
+						"resource": "https://*.asazure.windows.net",
+						"credential": {
+							"referenceName": "BI_App_User",
+							"type": "CredentialReference"
+						},
+						"userTenant": "1d10e28a-ceee-4836-9493-c5bbbb817996"
 					}
 				}
 			},
@@ -130,7 +142,18 @@
 									"value": "@string(activity('GetAzureASRefreshStatus').output)",
 									"type": "Expression"
 								},
-								"method": "GET"
+								"connectVia": {
+									"referenceName": "AutoResolveIntegrationRuntime",
+									"type": "IntegrationRuntimeReference"
+								},
+								"method": "GET",
+								"authentication": {
+									"credential": {
+										"referenceName": "BI_App_User",
+										"type": "CredentialReference"
+									},
+									"userTenant": "1d10e28a-ceee-4836-9493-c5bbbb817996"
+								}
 							}
 						}
 					]
@@ -171,8 +194,12 @@
 						"RetryCount": 2
 					},
 					"authentication": {
-						"type": "MSI",
-						"resource": "https://*.asazure.windows.net"
+						"resource": "https://*.asazure.windows.net",
+						"credential": {
+							"referenceName": "BI_App_User",
+							"type": "CredentialReference"
+						},
+						"userTenant": "1d10e28a-ceee-4836-9493-c5bbbb817996"
 					}
 				}
 			},
@@ -203,11 +230,11 @@
 		"parameters": {
 			"TenantID": {
 				"type": "String",
-				"defaultValue": "0e81f23b-8b67-4f1f-832b-ee8815c8ef62"
+				"defaultValue": "1d10e28a-ceee-4836-9493-c5bbbb817996"
 			},
 			"SubscriptionID": {
 				"type": "String",
-				"defaultValue": "89cee0ec-2e9e-4738-8b18-d3cc5a29c156"
+				"defaultValue": "33fb0613-d250-4bb2-ba76-4385eca3d510"
 			},
 			"Region": {
 				"type": "String",
@@ -215,7 +242,7 @@
 			},
 			"Server": {
 				"type": "String",
-				"defaultValue": "prevalas001"
+				"defaultValue": "enbiasdemo01"
 			},
 			"DatabaseName": {
 				"type": "String",
@@ -226,7 +253,7 @@
 			"name": "Azure AS"
 		},
 		"annotations": [],
-		"lastPublishTime": "2022-02-15T18:11:37Z"
+		"lastPublishTime": "2023-08-02T08:03:31Z"
 	},
 	"type": "Microsoft.DataFactory/factories/pipelines"
 }

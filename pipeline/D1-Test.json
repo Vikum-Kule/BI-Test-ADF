@@ -68,7 +68,7 @@
 			},
 			"KeyVault_URL": {
 				"type": "string",
-				"defaultValue": "https://PR-EVAL-BI-Key-Vault.vault.azure.net/"
+				"defaultValue": "https://en-bi-kv-demo01.vault.azure.net/"
 			}
 		},
 		"variables": {
@@ -81,7 +81,7 @@
 			"name": "Test"
 		},
 		"annotations": [],
-		"lastPublishTime": "2023-06-14T07:28:20Z"
+		"lastPublishTime": "2023-07-31T11:16:01Z"
 	},
 	"type": "Microsoft.DataFactory/factories/pipelines"
 }

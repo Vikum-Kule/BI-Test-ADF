@@ -168,8 +168,6 @@
 					}
 				],
 				"policy": {
-					"retry": 0,
-					"retryIntervalInSeconds": 30,
 					"secureOutput": false,
 					"secureInput": false
 				},
@@ -1920,7 +1918,7 @@
 			},
 			"KeyVault_URL": {
 				"type": "string",
-				"defaultValue": "https://PR-EVAL-BI-Key-Vault.vault.azure.net/"
+				"defaultValue": "https://en-bi-kv-demo01.vault.azure.net/"
 			}
 		},
 		"variables": {
@@ -1932,7 +1930,7 @@
 			"name": "StagingToDW"
 		},
 		"annotations": [],
-		"lastPublishTime": "2022-10-03T13:48:26Z"
+		"lastPublishTime": "2023-07-31T11:16:02Z"
 	},
 	"type": "Microsoft.DataFactory/factories/pipelines"
 }

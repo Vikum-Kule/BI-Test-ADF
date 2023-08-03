@@ -438,6 +438,10 @@
 						]
 					}
 				],
+				"policy": {
+					"secureOutput": false,
+					"secureInput": false
+				},
 				"userProperties": [],
 				"typeProperties": {
 					"variableName": "LastExtractDate",
@@ -504,7 +508,7 @@
 			},
 			"KeyVault_URL": {
 				"type": "string",
-				"defaultValue": "https://PR-EVAL-BI-Key-Vault.vault.azure.net/"
+				"defaultValue": "https://en-bi-kv-demo01.vault.azure.net/"
 			}
 		},
 		"variables": {
@@ -516,7 +520,7 @@
 			"name": "Test"
 		},
 		"annotations": [],
-		"lastPublishTime": "2022-02-16T12:35:08Z"
+		"lastPublishTime": "2023-07-31T11:16:02Z"
 	},
 	"type": "Microsoft.DataFactory/factories/pipelines"
 }

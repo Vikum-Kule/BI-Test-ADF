@@ -1,5 +1,6 @@
 {
 	"name": "Enactor_OperationalDB_MySQL",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
 	"properties": {
 		"parameters": {
 			"ConnectionStringKey": {
@@ -8,7 +9,7 @@
 			},
 			"KeyVault_URL": {
 				"type": "string",
-				"defaultValue": "https://PR-EVAL-BI-Key-Vault.vault.azure.net/"
+				"defaultValue": "https://en-bi-kv-demo01.vault.azure.net/"
 			}
 		},
 		"annotations": [],
@@ -33,7 +34,7 @@
 			}
 		},
 		"connectVia": {
-			"referenceName": "AutoResolveIntegrationRuntime",
+			"referenceName": "SelfHostedTest1",
 			"type": "IntegrationRuntimeReference"
 		}
 	}
