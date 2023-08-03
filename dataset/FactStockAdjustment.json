@@ -1,0 +1,113 @@
+{
+	"name": "FactStockAdjustment",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "EnactorDW",
+			"type": "LinkedServiceReference",
+			"parameters": {
+				"ConnectionStringKey": {
+					"value": "@dataset().ConnectionStringKey",
+					"type": "Expression"
+				},
+				"KeyVault_URL": {
+					"value": "@dataset().KeyVault_URL",
+					"type": "Expression"
+				}
+			}
+		},
+		"parameters": {
+			"ConnectionStringKey": {
+				"type": "string",
+				"defaultValue": "EnactorBI-DataWarehouseDB-ConnectionString"
+			},
+			"KeyVault_URL": {
+				"type": "string",
+				"defaultValue": "https://PR-EVAL-BI-Key-Vault.vault.azure.net/"
+			}
+		},
+		"folder": {
+			"name": "Facts"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [
+			{
+				"name": "Stock_Adjustment_Id",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Created_By_User_Key",
+				"type": "bigint",
+				"precision": 19
+			},
+			{
+				"name": "From_Location_Key",
+				"type": "bigint",
+				"precision": 19
+			},
+			{
+				"name": "Adjustment_Type",
+				"type": "nvarchar"
+			},
+			{
+				"name": "To_Location_Key",
+				"type": "bigint",
+				"precision": 19
+			},
+			{
+				"name": "From_Inventory_Type_Key",
+				"type": "bigint",
+				"precision": 19
+			},
+			{
+				"name": "To_Inventory_Type_Key",
+				"type": "bigint",
+				"precision": 19
+			},
+			{
+				"name": "From_Stock_Ledger_Trans_Type_key",
+				"type": "bigint",
+				"precision": 19
+			},
+			{
+				"name": "To_Stock_Ledger_Trans_Type_key",
+				"type": "bigint",
+				"precision": 19
+			},
+			{
+				"name": "Status",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Reason_Code_Key",
+				"type": "bigint",
+				"precision": 19
+			},
+			{
+				"name": "Product_Key",
+				"type": "bigint",
+				"precision": 19
+			},
+			{
+				"name": "Qty",
+				"type": "float",
+				"precision": 15
+			},
+			{
+				"name": "StockAdustment_Date_Key",
+				"type": "bigint",
+				"precision": 19
+			},
+			{
+				"name": "DateCreated",
+				"type": "datetime",
+				"precision": 23,
+				"scale": 3
+			}
+		],
+		"typeProperties": {
+			"schema": "dbo",
+			"table": "FactStockAdjustment"
+		}
+	}
+}

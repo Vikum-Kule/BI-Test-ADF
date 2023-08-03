@@ -1,0 +1,107 @@
+{
+	"name": "FactCashTransaction",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "EnactorDW",
+			"type": "LinkedServiceReference",
+			"parameters": {
+				"ConnectionStringKey": {
+					"value": "@dataset().ConnectionStringKey",
+					"type": "Expression"
+				},
+				"KeyVault_URL": {
+					"value": "@dataset().KeyVault_URL",
+					"type": "Expression"
+				}
+			}
+		},
+		"parameters": {
+			"ConnectionStringKey": {
+				"type": "string",
+				"defaultValue": "EnactorBI-DataWarehouseDB-ConnectionString"
+			},
+			"KeyVault_URL": {
+				"type": "string",
+				"defaultValue": "https://PR-EVAL-BI-Key-Vault.vault.azure.net/"
+			}
+		},
+		"folder": {
+			"name": "Facts"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [
+			{
+				"name": "Transaction_Type",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Device_Id",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Location_Key",
+				"type": "bigint",
+				"precision": 19
+			},
+			{
+				"name": "Owner_Id",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Session_Number",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "User_Key",
+				"type": "bigint",
+				"precision": 19
+			},
+			{
+				"name": "Transaction_Id",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Item_Index",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "Item_Type",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Tender_Key",
+				"type": "bigint",
+				"precision": 19
+			},
+			{
+				"name": "Value",
+				"type": "decimal",
+				"precision": 17,
+				"scale": 6
+			},
+			{
+				"name": "Effective_Date_Key",
+				"type": "bigint",
+				"precision": 19
+			},
+			{
+				"name": "Effective_Date_Offset",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "DateCreated",
+				"type": "datetime",
+				"precision": 23,
+				"scale": 3
+			}
+		],
+		"typeProperties": {
+			"schema": "dbo",
+			"table": "FactCashTransaction"
+		}
+	}
+}

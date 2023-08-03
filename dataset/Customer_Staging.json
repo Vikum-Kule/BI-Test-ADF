@@ -1,0 +1,73 @@
+{
+	"name": "Customer_Staging",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "EnactorDW_Staging",
+			"type": "LinkedServiceReference",
+			"parameters": {
+				"ConnectionStringKey": {
+					"value": "@dataset().ConnectionStringKey",
+					"type": "Expression"
+				},
+				"KeyVault_URL": {
+					"value": "@dataset().KeyVault_URL",
+					"type": "Expression"
+				}
+			}
+		},
+		"parameters": {
+			"ConnectionStringKey": {
+				"type": "string",
+				"defaultValue": "EnactorBI-StagingDB-ConnectionString"
+			},
+			"KeyVault_URL": {
+				"type": "string",
+				"defaultValue": "https://PR-EVAL-BI-Key-Vault.vault.azure.net/"
+			}
+		},
+		"folder": {
+			"name": "Staging/Dimensions"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [
+			{
+				"name": "CountryCode",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Customer_Number",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Forename",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Surname",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Loyalty_Scheme_id",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Loyalty_scheme_description",
+				"type": "nvarchar"
+			},
+			{
+				"name": "tier_code",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Tier_description",
+				"type": "nvarchar"
+			}
+		],
+		"typeProperties": {
+			"schema": "dbo",
+			"table": "Customer_Staging"
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

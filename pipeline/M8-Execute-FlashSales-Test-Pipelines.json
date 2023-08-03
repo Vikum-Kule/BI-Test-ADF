@@ -1,0 +1,348 @@
+{
+	"name": "M8-Execute-FlashSales-Test-Pipelines",
+	"properties": {
+		"activities": [
+			{
+				"name": "Update Log Tables",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "M4-Update_FlashSalesLY_Table",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "M5-Update-Logs-For-FlashSales-Test",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"KeyVault_URL": {
+							"value": "@pipeline().parameters.KeyVault_URL",
+							"type": "Expression"
+						},
+						"DataWarehouseDBConnectionStringKey": {
+							"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+							"type": "Expression"
+						},
+						"StagingDBConnectionStringKey": {
+							"value": "@pipeline().parameters.StagingDBConnectionStringKey",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			{
+				"name": "Delete Records From FactFlashSales",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "D-Staging To Data Warehouse",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "M6-Delete-From-FactFlashSales-For-FlashSales-Test",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"KeyVault_URL": {
+							"value": "@pipeline().parameters.KeyVault_URL",
+							"type": "Expression"
+						},
+						"DataWarehouseDBConnectionStringKey": {
+							"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+							"type": "Expression"
+						},
+						"StagingDBConnectionStringKey": {
+							"value": "@pipeline().parameters.StagingDBConnectionStringKey",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			{
+				"name": "S-Operational To Staging",
+				"description": "Copy data to falsh sales tables",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "Update Log Tables",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "S6_Copy_ProductSales_Fact_To_Staging",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"KeyVault_URL": {
+							"value": "@pipeline().parameters.KeyVault_URL",
+							"type": "Expression"
+						},
+						"OperationalDBConnectionStringKey": {
+							"value": "@pipeline().parameters.OperationalDBConnectionString",
+							"type": "Expression"
+						},
+						"StagingDBConnectionStringKey": {
+							"value": "@pipeline().parameters.StagingDBConnectionStringKey",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			{
+				"name": "D-Staging To Data Warehouse",
+				"description": "Copy data to falsh sales tables",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "S-Operational To Staging",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "D3-Update_Fact_Tables",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"StagingDBConnectionStringKey": {
+							"value": "@pipeline().parameters.StagingDBConnectionStringKey",
+							"type": "Expression"
+						},
+						"DataWarehouseDBConnectionStringKey": {
+							"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+							"type": "Expression"
+						},
+						"KeyVault_URL": {
+							"value": "@pipeline().parameters.KeyVault_URL",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			{
+				"name": "ProcessAzureAS_FlashSales",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "Delete Records From FactFlashSales",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "ProcessAzureAS_FlashSales",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"TenantID": {
+							"value": "@pipeline().parameters.TenantID",
+							"type": "Expression"
+						},
+						"SubscriptionID": {
+							"value": "@pipeline().parameters.SubscriptionID",
+							"type": "Expression"
+						},
+						"Region": {
+							"value": "@pipeline().parameters.Region",
+							"type": "Expression"
+						},
+						"Server": {
+							"value": "@pipeline().parameters.Server",
+							"type": "Expression"
+						},
+						"DatabaseName": {
+							"value": "@pipeline().parameters.DatabaseName",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			{
+				"name": "M7-Copy Dimension and Fact data",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "M3-Cleanup FlashSales Data",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "M7-Copy Dimension and Fact data for FlashSales Test",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"KeyVault_URL": {
+							"value": "@pipeline().parameters.KeyVault_URL",
+							"type": "Expression"
+						},
+						"OperationalDBConnectionString": {
+							"value": "@pipeline().parameters.OperationalDBConnectionString",
+							"type": "Expression"
+						},
+						"DataWarehouseDBConnectionStringKey": {
+							"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+							"type": "Expression"
+						},
+						"StagingDBConnectionStringKey": {
+							"value": "@pipeline().parameters.StagingDBConnectionStringKey",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			{
+				"name": "M3-Cleanup FlashSales Data",
+				"type": "ExecutePipeline",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "M3-Cleanup-FlashSales-Data",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"KeyVault_URL": {
+							"value": "@pipeline().parameters.KeyVault_URL",
+							"type": "Expression"
+						},
+						"OperationalDBConnectionString": {
+							"value": "@pipeline().parameters.OperationalDBConnectionString",
+							"type": "Expression"
+						},
+						"DataWarehouseDBConnectionStringKey": {
+							"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+							"type": "Expression"
+						},
+						"StagingDBConnectionStringKey": {
+							"value": "@pipeline().parameters.StagingDBConnectionStringKey",
+							"type": "Expression"
+						},
+						"TenantID": {
+							"value": "@pipeline().parameters.TenantID",
+							"type": "Expression"
+						},
+						"SubscriptionID": {
+							"value": "@pipeline().parameters.SubscriptionID",
+							"type": "Expression"
+						},
+						"Region": {
+							"value": "@pipeline().parameters.Region",
+							"type": "Expression"
+						},
+						"Server": {
+							"value": "@pipeline().parameters.Server",
+							"type": "Expression"
+						},
+						"DatabaseName": {
+							"value": "@pipeline().parameters.DatabaseName",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			{
+				"name": "M4-Update_FlashSalesLY_Table",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "M7-Copy Dimension and Fact data",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "M4-Update_FlashSalesLY_Table",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"KeyVault_URL": {
+							"value": "@pipeline().parameters.KeyVault_URL",
+							"type": "Expression"
+						},
+						"DataWarehouseDBConnectionStringKey": {
+							"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+							"type": "Expression"
+						}
+					}
+				}
+			}
+		],
+		"parameters": {
+			"KeyVault_URL": {
+				"type": "string",
+				"defaultValue": "https://PR-EVAL-BI-Key-Vault.vault.azure.net/"
+			},
+			"OperationalDBConnectionString": {
+				"type": "string",
+				"defaultValue": "Enactor-OperationalDB-ConnectionString"
+			},
+			"DataWarehouseDBConnectionStringKey": {
+				"type": "string",
+				"defaultValue": "EnactorBI-DataWarehouseDB-ConnectionString"
+			},
+			"StagingDBConnectionStringKey": {
+				"type": "string",
+				"defaultValue": "EnactorBI-StagingDB-ConnectionString"
+			},
+			"TenantID": {
+				"type": "string",
+				"defaultValue": "0e81f23b-8b67-4f1f-832b-ee8815c8ef62"
+			},
+			"SubscriptionID": {
+				"type": "string",
+				"defaultValue": "89cee0ec-2e9e-4738-8b18-d3cc5a29c156"
+			},
+			"Region": {
+				"type": "string",
+				"defaultValue": "uksouth"
+			},
+			"Server": {
+				"type": "string",
+				"defaultValue": "prevalas001"
+			},
+			"DatabaseName": {
+				"type": "string",
+				"defaultValue": "FlashSales"
+			}
+		},
+		"folder": {
+			"name": "Flash_Sales_ETL_Pipelines/Flash_Sales_Test_Pipelines"
+		},
+		"annotations": []
+	}
+}

@@ -1,0 +1,97 @@
+{
+	"name": "TenderTransactions_Staging",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "EnactorDW_Staging",
+			"type": "LinkedServiceReference",
+			"parameters": {
+				"ConnectionStringKey": {
+					"value": "@dataset().ConnectionStringKey",
+					"type": "Expression"
+				},
+				"KeyVault_URL": {
+					"value": "@dataset().KeyVault_URL",
+					"type": "Expression"
+				}
+			}
+		},
+		"parameters": {
+			"ConnectionStringKey": {
+				"type": "string",
+				"defaultValue": "EnactorBI-StagingDB-ConnectionString"
+			},
+			"KeyVault_URL": {
+				"type": "string",
+				"defaultValue": "https://PR-EVAL-BI-Key-Vault.vault.azure.net/"
+			}
+		},
+		"folder": {
+			"name": "Staging/Facts"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [
+			{
+				"name": "transaction_key",
+				"type": "nvarchar"
+			},
+			{
+				"name": "line_number",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "Tender_id",
+				"type": "nvarchar"
+			},
+			{
+				"name": "RegionKey",
+				"type": "nvarchar"
+			},
+			{
+				"name": "currency_id",
+				"type": "nvarchar"
+			},
+			{
+				"name": "base_value",
+				"type": "decimal",
+				"precision": 17,
+				"scale": 6
+			},
+			{
+				"name": "value",
+				"type": "decimal",
+				"precision": 17,
+				"scale": 6
+			},
+			{
+				"name": "exchange_rate",
+				"type": "float",
+				"precision": 15
+			},
+			{
+				"name": "is_change",
+				"type": "tinyint",
+				"precision": 3
+			},
+			{
+				"name": "user_id",
+				"type": "nvarchar"
+			},
+			{
+				"name": "authorising_user_id",
+				"type": "nvarchar"
+			},
+			{
+				"name": "last_updated",
+				"type": "datetime",
+				"precision": 23,
+				"scale": 3
+			}
+		],
+		"typeProperties": {
+			"schema": "dbo",
+			"table": "TenderTransactions_Staging"
+		}
+	}
+}

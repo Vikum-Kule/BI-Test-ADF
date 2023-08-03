@@ -1,0 +1,309 @@
+{
+	"name": "FactSales",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "EnactorDW",
+			"type": "LinkedServiceReference",
+			"parameters": {
+				"ConnectionStringKey": {
+					"value": "@dataset().ConnectionStringKey",
+					"type": "Expression"
+				},
+				"KeyVault_URL": {
+					"value": "@dataset().KeyVault_URL",
+					"type": "Expression"
+				}
+			}
+		},
+		"parameters": {
+			"ConnectionStringKey": {
+				"type": "string",
+				"defaultValue": "EnactorBI-DataWarehouseDB-ConnectionString"
+			},
+			"KeyVault_URL": {
+				"type": "string",
+				"defaultValue": "https://PR-EVAL-BI-Key-Vault.vault.azure.net/"
+			}
+		},
+		"folder": {
+			"name": "Facts"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [
+			{
+				"name": "transaction_id",
+				"type": "nvarchar"
+			},
+			{
+				"name": "line_number",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "Currency_Key",
+				"type": "bigint",
+				"precision": 19
+			},
+			{
+				"name": "Location_Key",
+				"type": "bigint",
+				"precision": 19
+			},
+			{
+				"name": "terminal_number",
+				"type": "bigint",
+				"precision": 19
+			},
+			{
+				"name": "Completed_DateTime",
+				"type": "datetime",
+				"precision": 23,
+				"scale": 3
+			},
+			{
+				"name": "Trade_Date_Key",
+				"type": "bigint",
+				"precision": 19
+			},
+			{
+				"name": "Tender_Key",
+				"type": "bigint",
+				"precision": 19
+			},
+			{
+				"name": "Product_Key",
+				"type": "bigint",
+				"precision": 19
+			},
+			{
+				"name": "MMG_Key",
+				"type": "bigint",
+				"precision": 19
+			},
+			{
+				"name": "Brand_Key",
+				"type": "bigint",
+				"precision": 19
+			},
+			{
+				"name": "Salesperson_Key",
+				"type": "bigint",
+				"precision": 19
+			},
+			{
+				"name": "User_Key",
+				"type": "bigint",
+				"precision": 19
+			},
+			{
+				"name": "promotion_Key",
+				"type": "bigint",
+				"precision": 19
+			},
+			{
+				"name": "customer_Key",
+				"type": "bigint",
+				"precision": 19
+			},
+			{
+				"name": "LoyaltySchemeTier_Key",
+				"type": "bigint",
+				"precision": 19
+			},
+			{
+				"name": "SalesValueLocal",
+				"type": "decimal",
+				"precision": 17,
+				"scale": 6
+			},
+			{
+				"name": "OrdersValueLocal",
+				"type": "decimal",
+				"precision": 17,
+				"scale": 6
+			},
+			{
+				"name": "ReturnsValueLocal",
+				"type": "decimal",
+				"precision": 17,
+				"scale": 6
+			},
+			{
+				"name": "VoidedValueLocal",
+				"type": "decimal",
+				"precision": 17,
+				"scale": 6
+			},
+			{
+				"name": "PromoValueLocal",
+				"type": "decimal",
+				"precision": 17,
+				"scale": 6
+			},
+			{
+				"name": "ManualDiscValueLocal",
+				"type": "decimal",
+				"precision": 17,
+				"scale": 6
+			},
+			{
+				"name": "PriceOverridesValueLocal",
+				"type": "decimal",
+				"precision": 17,
+				"scale": 6
+			},
+			{
+				"name": "tax_value_local",
+				"type": "decimal",
+				"precision": 17,
+				"scale": 6
+			},
+			{
+				"name": "SalesValueHome",
+				"type": "decimal",
+				"precision": 17,
+				"scale": 6
+			},
+			{
+				"name": "OrdersValueHome",
+				"type": "decimal",
+				"precision": 17,
+				"scale": 6
+			},
+			{
+				"name": "ReturnsValueHome",
+				"type": "decimal",
+				"precision": 17,
+				"scale": 6
+			},
+			{
+				"name": "VoidedValueHome",
+				"type": "decimal",
+				"precision": 17,
+				"scale": 6
+			},
+			{
+				"name": "PromoValueHome",
+				"type": "decimal",
+				"precision": 17,
+				"scale": 6
+			},
+			{
+				"name": "ManualDiscValueHome",
+				"type": "decimal",
+				"precision": 17,
+				"scale": 6
+			},
+			{
+				"name": "PriceOverridesValueHome",
+				"type": "decimal",
+				"precision": 17,
+				"scale": 6
+			},
+			{
+				"name": "tax_value_home",
+				"type": "decimal",
+				"precision": 17,
+				"scale": 6
+			},
+			{
+				"name": "Sales_Quantity",
+				"type": "float",
+				"precision": 15
+			},
+			{
+				"name": "Orders_Quantity",
+				"type": "float",
+				"precision": 15
+			},
+			{
+				"name": "Returns_Quantity",
+				"type": "float",
+				"precision": 15
+			},
+			{
+				"name": "Item_Voided",
+				"type": "bit"
+			},
+			{
+				"name": "Transaction_Voided",
+				"type": "bit"
+			},
+			{
+				"name": "Item_Returned",
+				"type": "bit"
+			},
+			{
+				"name": "Void_Reason_Code_Key",
+				"type": "bigint",
+				"precision": 19
+			},
+			{
+				"name": "Return_Reason_Code_Key",
+				"type": "bigint",
+				"precision": 19
+			},
+			{
+				"name": "CostValueHome",
+				"type": "decimal",
+				"precision": 17,
+				"scale": 6
+			},
+			{
+				"name": "is_promotion_item",
+				"type": "bit"
+			},
+			{
+				"name": "Hour_Key",
+				"type": "bigint",
+				"precision": 19
+			},
+			{
+				"name": "Colour_Key",
+				"type": "bigint",
+				"precision": 19
+			},
+			{
+				"name": "Size_Key",
+				"type": "bigint",
+				"precision": 19
+			},
+			{
+				"name": "Style_Key",
+				"type": "bigint",
+				"precision": 19
+			},
+			{
+				"name": "price_override_reason_code_key",
+				"type": "bigint",
+				"precision": 19
+			},
+			{
+				"name": "discount_reason_code_key",
+				"type": "bigint",
+				"precision": 19
+			},
+			{
+				"name": "is_employee_transaction",
+				"type": "tinyint",
+				"precision": 3
+			},
+			{
+				"name": "DateCreated",
+				"type": "datetime",
+				"precision": 23,
+				"scale": 3
+			},
+			{
+				"name": "original_transaction_id",
+				"type": "nvarchar"
+			}
+		],
+		"typeProperties": {
+			"schema": "dbo",
+			"table": "FactSales"
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

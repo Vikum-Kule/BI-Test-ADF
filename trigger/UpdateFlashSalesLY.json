@@ -1,0 +1,28 @@
+{
+	"name": "UpdateFlashSalesLY",
+	"properties": {
+		"annotations": [],
+		"runtimeState": "Stopped",
+		"pipelines": [
+			{
+				"pipelineReference": {
+					"referenceName": "M4-Update_FlashSalesLY_Table",
+					"type": "PipelineReference"
+				},
+				"parameters": {
+					"KeyVault_URL": "https://PR-EVAL-BI-Key-Vault.vault.azure.net/",
+					"DataWarehouseDBConnectionStringKey": "EnactorBI-DataWarehouseDB-ConnectionString"
+				}
+			}
+		],
+		"type": "ScheduleTrigger",
+		"typeProperties": {
+			"recurrence": {
+				"frequency": "Day",
+				"interval": 1,
+				"startTime": "2022-10-05T00:30:00Z",
+				"timeZone": "UTC"
+			}
+		}
+	}
+}

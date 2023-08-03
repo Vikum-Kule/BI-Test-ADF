@@ -1,0 +1,112 @@
+{
+	"name": "M5-Update-Logs-For-FlashSales-Test",
+	"properties": {
+		"activities": [
+			{
+				"name": "Update ExtractLog Table",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "UpdateExtractLogForFlashSalesTesting",
+					"storedProcedureParameters": {
+						"ExtractType": {
+							"value": "ProductFlashSalesFact",
+							"type": "String"
+						},
+						"ExtractDateTime": {
+							"value": "2022-06-22 23:59:59.000",
+							"type": "Datetime"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "EnactorDW_Staging",
+					"type": "LinkedServiceReference",
+					"parameters": {
+						"ConnectionStringKey": {
+							"value": "@pipeline().parameters.StagingDBConnectionStringKey",
+							"type": "Expression"
+						},
+						"KeyVault_URL": {
+							"value": "@pipeline().parameters.KeyVault_URL",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			{
+				"name": "Update UpdateLog Table",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "Update ExtractLog Table",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "updateUpdateLogForFlashSalesTesting",
+					"storedProcedureParameters": {
+						"UpdateDateTime": {
+							"value": "2022-06-22 23:59:59.000",
+							"type": "Datetime"
+						},
+						"UpdateType": {
+							"value": "FlashSalesFact",
+							"type": "String"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "EnactorDW",
+					"type": "LinkedServiceReference",
+					"parameters": {
+						"ConnectionStringKey": {
+							"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+							"type": "Expression"
+						},
+						"KeyVault_URL": {
+							"value": "@pipeline().parameters.KeyVault_URL",
+							"type": "Expression"
+						}
+					}
+				}
+			}
+		],
+		"parameters": {
+			"KeyVault_URL": {
+				"type": "string",
+				"defaultValue": "https://PR-EVAL-BI-Key-Vault.vault.azure.net/"
+			},
+			"DataWarehouseDBConnectionStringKey": {
+				"type": "string",
+				"defaultValue": "EnactorBI-DataWarehouseDB-ConnectionString"
+			},
+			"StagingDBConnectionStringKey": {
+				"type": "string",
+				"defaultValue": "EnactorBI-StagingDB-ConnectionString"
+			}
+		},
+		"folder": {
+			"name": "Flash_Sales_ETL_Pipelines/Flash_Sales_Test_Pipelines"
+		},
+		"annotations": []
+	}
+}

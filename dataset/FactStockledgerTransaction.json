@@ -1,0 +1,91 @@
+{
+	"name": "FactStockledgerTransaction",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "EnactorDW",
+			"type": "LinkedServiceReference",
+			"parameters": {
+				"ConnectionStringKey": {
+					"value": "@dataset().ConnectionStringKey",
+					"type": "Expression"
+				},
+				"KeyVault_URL": {
+					"value": "@dataset().KeyVault_URL",
+					"type": "Expression"
+				}
+			}
+		},
+		"parameters": {
+			"KeyVault_URL": {
+				"type": "string",
+				"defaultValue": "https://PR-EVAL-BI-Key-Vault.vault.azure.net/"
+			},
+			"ConnectionStringKey": {
+				"type": "string",
+				"defaultValue": "EnactorBI-DataWarehouseDB-ConnectionString"
+			}
+		},
+		"folder": {
+			"name": "Facts"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [
+			{
+				"name": "id",
+				"type": "nvarchar"
+			},
+			{
+				"name": "transaction_type_key",
+				"type": "bigint",
+				"precision": 19
+			},
+			{
+				"name": "product_key",
+				"type": "bigint",
+				"precision": 19
+			},
+			{
+				"name": "location_key",
+				"type": "bigint",
+				"precision": 19
+			},
+			{
+				"name": "quantity",
+				"type": "float",
+				"precision": 15
+			},
+			{
+				"name": "cost",
+				"type": "float",
+				"precision": 15
+			},
+			{
+				"name": "retail_ex_tax",
+				"type": "bigint",
+				"precision": 19
+			},
+			{
+				"name": "snapshot_date_key",
+				"type": "bigint",
+				"precision": 19
+			},
+			{
+				"name": "date_created",
+				"type": "datetime",
+				"precision": 23,
+				"scale": 3
+			},
+			{
+				"name": "last_updated",
+				"type": "datetime",
+				"precision": 23,
+				"scale": 3
+			}
+		],
+		"typeProperties": {
+			"schema": "dbo",
+			"table": "FactStockledgerTransactions"
+		}
+	}
+}

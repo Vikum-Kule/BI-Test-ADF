@@ -1,0 +1,348 @@
+{
+	"name": "D4-Update_CashTransaction_Fact_Tables",
+	"properties": {
+		"activities": [
+			{
+				"name": "Lookup Previous Staging Extract Date",
+				"description": "Get penultimate extract date from staging extract log",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": "select \nFORMAT(max(extractDateTime),'yyyy-MM-ddTHH:mm:ssZ') as LastSuccessfulExtractDate\nfrom extractlog\nwhere extractdatetime not in (\nselect max(extractDateTime) from extractlog\nwhere extracttype = 'CashManagementFact'\nand extractresult = 'Success')\nand extracttype = 'CashManagementFact'\nand extractresult = 'Success'\n",
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "Brand_Staging",
+						"type": "DatasetReference",
+						"parameters": {
+							"ConnectionStringKey": {
+								"value": "@pipeline().parameters.StagingDBConnectionStringKey",
+								"type": "Expression"
+							},
+							"KeyVault_URL": {
+								"value": "@pipeline().parameters.KeyVault_URL",
+								"type": "Expression"
+							}
+						}
+					}
+				}
+			},
+			{
+				"name": "Create Update Log Entry",
+				"type": "Lookup",
+				"dependsOn": [
+					{
+						"activity": "Set Last Update Date",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": {
+							"value": "@concat('insert UpdateLog \nvalues(getdate(),''',formatDateTime(activity('Lookup Previous Staging Extract Date').output.firstRow.LastSuccessfulExtractDate,'yyyy-MM-dd HH:mm:ss'),''',\n''CashManagementFact'',\n''Started'',\ngetdate());\nselect SCOPE_IDENTITY() as logRecord')",
+							"type": "Expression"
+						},
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "DimLocation",
+						"type": "DatasetReference",
+						"parameters": {
+							"ConnectionStringKey": {
+								"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+								"type": "Expression"
+							},
+							"KeyVault_URL": {
+								"value": "@pipeline().parameters.KeyVault_URL",
+								"type": "Expression"
+							}
+						}
+					}
+				}
+			},
+			{
+				"name": "Set Last Update Date",
+				"description": "",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "Lookup Previous Staging Extract Date",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "LastUpdateDate",
+					"value": {
+						"value": "@{convertFromUtc(activity('Lookup Previous Staging Extract Date').output.firstRow.LastSuccessfulExtractDate,'GMT Standard Time')}",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "Complete Update Log Entry",
+				"description": "Set Extract Log Entry to Success",
+				"type": "Lookup",
+				"dependsOn": [
+					{
+						"activity": "CashTransactionUpdate",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": {
+							"value": "update updateLog \nset UpdateResult = 'Success',\nLastUpdatedDate = getdate()\nwhere logid = @{activity('Create Update Log Entry').output.firstRow.logRecord};\n\nselect 0 res",
+							"type": "Expression"
+						},
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "DimLocation",
+						"type": "DatasetReference",
+						"parameters": {
+							"ConnectionStringKey": {
+								"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+								"type": "Expression"
+							},
+							"KeyVault_URL": {
+								"value": "@pipeline().parameters.KeyVault_URL",
+								"type": "Expression"
+							}
+						}
+					}
+				}
+			},
+			{
+				"name": "CashTransactionUpdate",
+				"type": "ExecuteDataFlow",
+				"dependsOn": [
+					{
+						"activity": "InsertMissingTenderKeys",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "1.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataflow": {
+						"referenceName": "CashTransactionUpdate",
+						"type": "DataFlowReference",
+						"parameters": {
+							"LastUpdatedDate": {
+								"value": "'@{formatDateTime(variables('LastUpdateDate'))}'",
+								"type": "Expression"
+							}
+						},
+						"datasetParameters": {
+							"CashTransactionStagingFull": {
+								"ConnectionStringKey": {
+									"value": "@pipeline().parameters.StagingDBConnectionStringKey",
+									"type": "Expression"
+								},
+								"KeyVault_URL": {
+									"value": "@pipeline().parameters.KeyVault_URL",
+									"type": "Expression"
+								}
+							},
+							"DimLocation": {
+								"ConnectionStringKey": {
+									"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+									"type": "Expression"
+								},
+								"KeyVault_URL": {
+									"value": "@pipeline().parameters.KeyVault_URL",
+									"type": "Expression"
+								}
+							},
+							"DimTender": {
+								"ConnectionStringKey": {
+									"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+									"type": "Expression"
+								},
+								"KeyVault_URL": {
+									"value": "@pipeline().parameters.KeyVault_URL",
+									"type": "Expression"
+								}
+							},
+							"DimDate": {
+								"ConnectionStringKey": {
+									"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+									"type": "Expression"
+								},
+								"KeyVault_URL": {
+									"value": "@pipeline().parameters.KeyVault_URL",
+									"type": "Expression"
+								}
+							},
+							"DimUser": {
+								"ConnectionStringKey": {
+									"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+									"type": "Expression"
+								},
+								"KeyVault_URL": {
+									"value": "@pipeline().parameters.KeyVault_URL",
+									"type": "Expression"
+								}
+							},
+							"WriteToFactCashTransaction": {
+								"ConnectionStringKey": {
+									"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+									"type": "Expression"
+								},
+								"KeyVault_URL": {
+									"value": "@pipeline().parameters.KeyVault_URL",
+									"type": "Expression"
+								}
+							}
+						}
+					},
+					"compute": {
+						"coreCount": 8,
+						"computeType": "General"
+					},
+					"traceLevel": "Fine"
+				}
+			},
+			{
+				"name": "InsertMissingTenderKeys",
+				"type": "ExecuteDataFlow",
+				"dependsOn": [
+					{
+						"activity": "Create Update Log Entry",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "1.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataflow": {
+						"referenceName": "InsertMissingTenderKeys",
+						"type": "DataFlowReference",
+						"parameters": {
+							"LastUpdatedDate": {
+								"value": "'@{formatDateTime(variables('LastUpdateDate'),'yyyy-MM-dd HH:mm:ss')}'",
+								"type": "Expression"
+							}
+						},
+						"datasetParameters": {
+							"CashTransactionStagingFull": {
+								"ConnectionStringKey": {
+									"value": "@pipeline().parameters.StagingDBConnectionStringKey",
+									"type": "Expression"
+								},
+								"KeyVault_URL": {
+									"value": "@pipeline().parameters.KeyVault_URL",
+									"type": "Expression"
+								}
+							},
+							"DimTender": {
+								"ConnectionStringKey": {
+									"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+									"type": "Expression"
+								},
+								"KeyVault_URL": {
+									"value": "@pipeline().parameters.KeyVault_URL",
+									"type": "Expression"
+								}
+							},
+							"InsertDimTender": {
+								"ConnectionStringKey": {
+									"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+									"type": "Expression"
+								},
+								"KeyVault_URL": {
+									"value": "@pipeline().parameters.KeyVault_URL",
+									"type": "Expression"
+								}
+							}
+						}
+					},
+					"compute": {
+						"coreCount": 8,
+						"computeType": "General"
+					},
+					"traceLevel": "Fine"
+				}
+			}
+		],
+		"parameters": {
+			"StagingDBConnectionStringKey": {
+				"type": "string",
+				"defaultValue": "EnactorBI-StagingDB-ConnectionString"
+			},
+			"DataWarehouseDBConnectionStringKey": {
+				"type": "string",
+				"defaultValue": "EnactorBI-DataWarehouseDB-ConnectionString"
+			},
+			"KeyVault_URL": {
+				"type": "string",
+				"defaultValue": "https://PR-EVAL-BI-Key-Vault.vault.azure.net/"
+			}
+		},
+		"variables": {
+			"LastUpdateDate": {
+				"type": "String"
+			}
+		},
+		"folder": {
+			"name": "StagingToDW"
+		},
+		"annotations": [],
+		"lastPublishTime": "2022-10-03T13:48:26Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

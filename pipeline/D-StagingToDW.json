@@ -1,0 +1,154 @@
+{
+	"name": "D-StagingToDW",
+	"properties": {
+		"activities": [
+			{
+				"name": "D1-Update_Dimension_Tables",
+				"type": "ExecutePipeline",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "D1-Update_Dimension_Tables",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"StagingDBConnectionStringKey": {
+							"value": "@pipeline().parameters.StagingDBConnectionStringKey",
+							"type": "Expression"
+						},
+						"DataWarehouseDBConnectionStringKey": {
+							"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+							"type": "Expression"
+						},
+						"KeyVault_URL": {
+							"value": "@pipeline().parameters.KeyVault_URL",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			{
+				"name": "D2-Update_Sales_FACT_Tables",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "D1-Update_Dimension_Tables",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "D2-Update_Sales_Fact_Tables",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"StagingDBConnectionStringKey": {
+							"value": "@pipeline().parameters.StagingDBConnectionStringKey",
+							"type": "Expression"
+						},
+						"DataWarehouseDBConnectionStringKey": {
+							"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+							"type": "Expression"
+						},
+						"KeyVault_URL": {
+							"value": "@pipeline().parameters.KeyVault_URL",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			{
+				"name": "D3-Update_Inventory_Fact_Tables",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "D1-Update_Dimension_Tables",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "D3-Update_Inventory_Fact_Tables",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"StagingDBConnectionStringKey": {
+							"value": "@pipeline().parameters.StagingDBConnectionStringKey",
+							"type": "Expression"
+						},
+						"DataWarehouseDBConnectionStringKey": {
+							"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+							"type": "Expression"
+						},
+						"KeyVault_URL": {
+							"value": "@pipeline().parameters.KeyVault_URL",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			{
+				"name": "D4-Update_CashTransaction_Fact_Tables",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "D1-Update_Dimension_Tables",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "D4-Update_CashTransaction_Fact_Tables",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"StagingDBConnectionStringKey": {
+							"value": "@pipeline().parameters.StagingDBConnectionStringKey",
+							"type": "Expression"
+						},
+						"DataWarehouseDBConnectionStringKey": {
+							"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+							"type": "Expression"
+						},
+						"KeyVault_URL": {
+							"value": "@pipeline().parameters.KeyVault_URL",
+							"type": "Expression"
+						}
+					}
+				}
+			}
+		],
+		"parameters": {
+			"StagingDBConnectionStringKey": {
+				"type": "string",
+				"defaultValue": "EnactorBI-StagingDB-ConnectionString"
+			},
+			"DataWarehouseDBConnectionStringKey": {
+				"type": "string",
+				"defaultValue": "EnactorBI-DataWarehouseDB-ConnectionString"
+			},
+			"KeyVault_URL": {
+				"type": "string",
+				"defaultValue": "https://PR-EVAL-BI-Key-Vault.vault.azure.net/"
+			}
+		},
+		"folder": {
+			"name": "StagingToDW"
+		},
+		"annotations": []
+	}
+}

@@ -1,0 +1,1435 @@
+{
+	"name": "S5_Copy_Inventory_Fact_To_Staging",
+	"properties": {
+		"activities": [
+			{
+				"name": "Fetch Last Extract Date",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": "SELECT FORMAT(max(ExtractDateTime),'yyyy-MM-ddTHH:mm:ssZ') as LastSuccessfulExtractDate\nfrom ExtractLog \nwhere ExtractResult = 'Success'\nand ExtractType = 'InventoryFact'",
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "Customer_Staging",
+						"type": "DatasetReference",
+						"parameters": {
+							"ConnectionStringKey": {
+								"value": "@pipeline().parameters.StagingDBConnectionStringKey",
+								"type": "Expression"
+							},
+							"KeyVault_URL": {
+								"value": "@pipeline().parameters.KeyVault_URL",
+								"type": "Expression"
+							}
+						}
+					}
+				}
+			},
+			{
+				"name": "Set Last Extract Date",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "Fetch Last Extract Date",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "LastExtractDate",
+					"value": {
+						"value": "@{convertFromUtc(activity('Fetch Last Extract Date').output.firstRow.LastSuccessfulExtractDate,'GMT Standard Time')}",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "Create Extract Log",
+				"type": "Lookup",
+				"dependsOn": [
+					{
+						"activity": "Set Last Extract Date",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": "insert ExtractLog \r\nvalues(getdate(),'InventoryFact','Started',getdate());\r\nselect SCOPE_IDENTITY() as logRecord",
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "Customer_Staging",
+						"type": "DatasetReference",
+						"parameters": {
+							"ConnectionStringKey": {
+								"value": "@pipeline().parameters.StagingDBConnectionStringKey",
+								"type": "Expression"
+							},
+							"KeyVault_URL": {
+								"value": "@pipeline().parameters.KeyVault_URL",
+								"type": "Expression"
+							}
+						}
+					}
+				}
+			},
+			{
+				"name": "Update Extract Log Entry",
+				"type": "Lookup",
+				"dependsOn": [
+					{
+						"activity": "Update ExtractLog with Latest UpdateDate",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": {
+							"value": "update ExtractLog \nset ExtractResult = 'Success',\nLastUpdatedDate = getdate()\nwhere logid = @{activity('Create Extract Log').output.firstRow.logRecord};\n\nselect 0 res",
+							"type": "Expression"
+						},
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "Customer_Staging",
+						"type": "DatasetReference",
+						"parameters": {
+							"ConnectionStringKey": {
+								"value": "@pipeline().parameters.StagingDBConnectionStringKey",
+								"type": "Expression"
+							},
+							"KeyVault_URL": {
+								"value": "@pipeline().parameters.KeyVault_URL",
+								"type": "Expression"
+							}
+						}
+					}
+				}
+			},
+			{
+				"name": "Check For New StockLedgerTransaction Data",
+				"type": "Lookup",
+				"dependsOn": [
+					{
+						"activity": "Create Extract Log",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "MySqlSource",
+						"query": {
+							"value": "select count(1) as ct \nfrom stockledgertransactions\nwhere date_add('1970-01-01', INTERVAL timestamp*1000 MICROSECOND) > '@{formatDateTime(variables('LastExtractDate'),'yyyy-MM-dd HH:mm:ss')}'",
+							"type": "Expression"
+						}
+					},
+					"dataset": {
+						"referenceName": "OperationalDB",
+						"type": "DatasetReference",
+						"parameters": {
+							"ConnectionStringKey": {
+								"value": "@pipeline().parameters.OperationalDBConnectionStringKey",
+								"type": "Expression"
+							},
+							"KeyVault_URL": {
+								"value": "@pipeline().parameters.KeyVault_URL",
+								"type": "Expression"
+							}
+						}
+					}
+				}
+			},
+			{
+				"name": "If New StockLedger Data",
+				"type": "IfCondition",
+				"dependsOn": [
+					{
+						"activity": "Check For New StockLedgerTransaction Data",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@greater(activity('Check For New StockLedgerTransaction Data').output.firstRow.ct,0)",
+						"type": "Expression"
+					},
+					"ifTrueActivities": [
+						{
+							"name": "Copy Stock ledger Transaction Data",
+							"type": "Copy",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "MySqlSource",
+									"query": {
+										"value": "select s.ID,\ns.Date,\ns.Transaction_Type,\ns.Product_Id,\ns.Location_Id,\ns.Quantity,\ns.Cost,\ns.Retail_Ex_Tax,\nconvert(current_timestamp(),date) as snapshot_date\nfrom stockledgertransactions s\nwhere date_add('1970-01-01', INTERVAL s.timestamp*1000 MICROSECOND) > '@{formatDateTime(variables('LastExtractDate'),'yyyy-MM-dd HH:mm:ss')}' \nAND \ns.Transaction_Type not in \n    ('PROM',\n    'POSM',\n    'PMSAL',\n    'SALE',\n    'RTN');",
+										"type": "Expression"
+									}
+								},
+								"sink": {
+									"type": "AzureSqlSink",
+									"writeBehavior": "upsert",
+									"upsertSettings": {
+										"useTempDB": true,
+										"keys": [
+											"id"
+										]
+									},
+									"sqlWriterUseTableLock": false,
+									"disableMetricsCollection": false
+								},
+								"enableStaging": false,
+								"translator": {
+									"type": "TabularTranslator",
+									"mappings": [
+										{
+											"source": {
+												"name": "ID",
+												"type": "Int64"
+											},
+											"sink": {
+												"name": "id",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "Date",
+												"type": "DateTime"
+											},
+											"sink": {
+												"name": "last_updated",
+												"type": "DateTime",
+												"physicalType": "datetime"
+											}
+										},
+										{
+											"source": {
+												"name": "Transaction_Type",
+												"type": "String"
+											},
+											"sink": {
+												"name": "transaction_type",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "Product_Id",
+												"type": "String"
+											},
+											"sink": {
+												"name": "product_id",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "Location_Id",
+												"type": "String"
+											},
+											"sink": {
+												"name": "location_Id",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "Quantity",
+												"type": "Int32"
+											},
+											"sink": {
+												"name": "quantity",
+												"type": "Double",
+												"physicalType": "float"
+											}
+										},
+										{
+											"source": {
+												"name": "Cost",
+												"type": "Single"
+											},
+											"sink": {
+												"name": "cost",
+												"type": "Double",
+												"physicalType": "float"
+											}
+										},
+										{
+											"source": {
+												"name": "Retail_Ex_Tax",
+												"type": "Int64"
+											},
+											"sink": {
+												"name": "retail_ex_tax",
+												"type": "Int64",
+												"physicalType": "bigint"
+											}
+										},
+										{
+											"source": {
+												"name": "snapshot_date",
+												"type": "DateTime"
+											},
+											"sink": {
+												"name": "snapshot_date",
+												"type": "DateTime",
+												"physicalType": "date"
+											}
+										}
+									],
+									"typeConversion": true,
+									"typeConversionSettings": {
+										"allowDataTruncation": true,
+										"treatBooleanAsNumber": false
+									}
+								}
+							},
+							"inputs": [
+								{
+									"referenceName": "OperationalDB",
+									"type": "DatasetReference",
+									"parameters": {
+										"ConnectionStringKey": {
+											"value": "@pipeline().parameters.OperationalDBConnectionStringKey",
+											"type": "Expression"
+										},
+										"KeyVault_URL": {
+											"value": "@pipeline().parameters.KeyVault_URL",
+											"type": "Expression"
+										}
+									}
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "StockledgerTransactions_Staging",
+									"type": "DatasetReference",
+									"parameters": {
+										"ConnectionStringKey": {
+											"value": "@pipeline().parameters.StagingDBConnectionStringKey",
+											"type": "Expression"
+										},
+										"KeyVault_URL": {
+											"value": "@pipeline().parameters.KeyVault_URL",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						}
+					]
+				}
+			},
+			{
+				"name": "Check For New ProductSupplierDetails Data",
+				"type": "Lookup",
+				"dependsOn": [
+					{
+						"activity": "Create Extract Log",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "MySqlSource",
+						"query": {
+							"value": "select count(1) as ct \nfrom productsupplierdetails\nwhere last_updated > '@{formatDateTime(variables('LastExtractDate'),'yyyy-MM-dd HH:mm:ss')}'",
+							"type": "Expression"
+						}
+					},
+					"dataset": {
+						"referenceName": "OperationalDB",
+						"type": "DatasetReference",
+						"parameters": {
+							"ConnectionStringKey": {
+								"value": "@pipeline().parameters.OperationalDBConnectionStringKey",
+								"type": "Expression"
+							},
+							"KeyVault_URL": {
+								"value": "@pipeline().parameters.KeyVault_URL",
+								"type": "Expression"
+							}
+						}
+					}
+				}
+			},
+			{
+				"name": "If New ProductSupplierDetails Data",
+				"type": "IfCondition",
+				"dependsOn": [
+					{
+						"activity": "Check For New ProductSupplierDetails Data",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@greater(activity('Check For New ProductSupplierDetails Data').output.firstRow.ct,0)",
+						"type": "Expression"
+					},
+					"ifTrueActivities": [
+						{
+							"name": "Copy ProductSupplierDetails Data",
+							"type": "Copy",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "MySqlSource",
+									"query": {
+										"value": "select Supplier_Id,\nProduct_Id,\nDefault_Supplier_Product_Id,\nPrimary_Supplier,\nLast_Updated\nfrom productsupplierdetails \nwhere (last_updated > '@{formatDateTime(variables('LastExtractDate'),'yyyy-MM-dd HH:mm:ss')}');",
+										"type": "Expression"
+									}
+								},
+								"sink": {
+									"type": "AzureSqlSink",
+									"writeBehavior": "upsert",
+									"upsertSettings": {
+										"useTempDB": true,
+										"keys": [
+											"supplier_id",
+											"product_id",
+											"default_supplier_product_id"
+										]
+									},
+									"sqlWriterUseTableLock": false,
+									"disableMetricsCollection": false
+								},
+								"enableStaging": false,
+								"translator": {
+									"type": "TabularTranslator",
+									"mappings": [
+										{
+											"source": {
+												"name": "Supplier_Id",
+												"type": "String"
+											},
+											"sink": {
+												"name": "supplier_id",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "Product_Id",
+												"type": "String"
+											},
+											"sink": {
+												"name": "product_id",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "Default_Supplier_Product_Id",
+												"type": "String"
+											},
+											"sink": {
+												"name": "default_supplier_product_id",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "Primary_Supplier",
+												"type": "Int16"
+											},
+											"sink": {
+												"name": "primary_supplier",
+												"type": "Byte",
+												"physicalType": "tinyint"
+											}
+										},
+										{
+											"source": {
+												"name": "Last_Updated",
+												"type": "DateTime"
+											},
+											"sink": {
+												"name": "last_updated",
+												"type": "DateTime",
+												"physicalType": "datetime"
+											}
+										}
+									],
+									"typeConversion": true,
+									"typeConversionSettings": {
+										"allowDataTruncation": true,
+										"treatBooleanAsNumber": false
+									}
+								}
+							},
+							"inputs": [
+								{
+									"referenceName": "OperationalDB",
+									"type": "DatasetReference",
+									"parameters": {
+										"ConnectionStringKey": {
+											"value": "@pipeline().parameters.OperationalDBConnectionStringKey",
+											"type": "Expression"
+										},
+										"KeyVault_URL": {
+											"value": "@pipeline().parameters.KeyVault_URL",
+											"type": "Expression"
+										}
+									}
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "ProductSupplierDetails_Staging",
+									"type": "DatasetReference",
+									"parameters": {
+										"ConnectionStringKey": {
+											"value": "@pipeline().parameters.StagingDBConnectionStringKey",
+											"type": "Expression"
+										},
+										"KeyVault_URL": {
+											"value": "@pipeline().parameters.KeyVault_URL",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						}
+					]
+				}
+			},
+			{
+				"name": "Copy item inventory Data",
+				"description": "Copy latest snapshot - do not filter by last updated",
+				"type": "Copy",
+				"dependsOn": [
+					{
+						"activity": "DeleteCurrentInventoryData",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "MySqlSource",
+						"query": {
+							"value": "select i.Inventory_Item_Id,\ni.Inventory_Item_Type,\ni.Location_Id,\ni.Location_Area_Id,\ni.Container_Id,\ni.Inventory_Type,\ni.Value,\nconvert(i.Last_Updated,date) as Last_Updated ,\nConcat(p.MMGroup_Hierarchy_Id,'/',p.MMGroup_Id) MMGroupKey,\ncurrent_timestamp() as SnapshotDate,\nconvert(current_timestamp(),date) as Inventory_Snapshot_Date \nfrom iteminventorylevels i \ninner join products p on i.Inventory_Item_Id = p.Product_Id ;",
+							"type": "Expression"
+						}
+					},
+					"sink": {
+						"type": "AzureSqlSink",
+						"writeBehavior": "upsert",
+						"upsertSettings": {
+							"useTempDB": true,
+							"keys": [
+								"Inventory_Item_Id",
+								"Inventory_Item_Type",
+								"Location_Id",
+								"Location_Area_Id",
+								"Container_Id",
+								"Inventory_Type",
+								"Inventory_Snapshot_Date"
+							]
+						},
+						"sqlWriterUseTableLock": false,
+						"disableMetricsCollection": false
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"mappings": [
+							{
+								"source": {
+									"name": "Inventory_Item_Id",
+									"type": "String"
+								},
+								"sink": {
+									"name": "Inventory_Item_Id",
+									"type": "String",
+									"physicalType": "nvarchar"
+								}
+							},
+							{
+								"source": {
+									"name": "Inventory_Item_Type",
+									"type": "String"
+								},
+								"sink": {
+									"name": "Inventory_Item_Type",
+									"type": "String",
+									"physicalType": "nvarchar"
+								}
+							},
+							{
+								"source": {
+									"name": "Location_Id",
+									"type": "String"
+								},
+								"sink": {
+									"name": "Location_Id",
+									"type": "String",
+									"physicalType": "nvarchar"
+								}
+							},
+							{
+								"source": {
+									"name": "Location_Area_Id",
+									"type": "String"
+								},
+								"sink": {
+									"name": "Location_Area_Id",
+									"type": "String",
+									"physicalType": "nvarchar"
+								}
+							},
+							{
+								"source": {
+									"name": "Container_Id",
+									"type": "String"
+								},
+								"sink": {
+									"name": "Container_Id",
+									"type": "String",
+									"physicalType": "nvarchar"
+								}
+							},
+							{
+								"source": {
+									"name": "Inventory_Type",
+									"type": "String"
+								},
+								"sink": {
+									"name": "Inventory_Type",
+									"type": "String",
+									"physicalType": "nvarchar"
+								}
+							},
+							{
+								"source": {
+									"name": "Inventory_Snapshot_Date",
+									"type": "DateTime"
+								},
+								"sink": {
+									"name": "Inventory_Snapshot_Date",
+									"type": "DateTime",
+									"physicalType": "date"
+								}
+							},
+							{
+								"source": {
+									"name": "Value",
+									"type": "Int32"
+								},
+								"sink": {
+									"name": "Value",
+									"type": "Int32",
+									"physicalType": "int"
+								}
+							},
+							{
+								"source": {
+									"name": "Last_Updated",
+									"type": "DateTime"
+								},
+								"sink": {
+									"name": "Last_Updated",
+									"type": "DateTime",
+									"physicalType": "date"
+								}
+							},
+							{
+								"source": {
+									"name": "SnapshotDate",
+									"type": "DateTime"
+								},
+								"sink": {
+									"name": "SnapshotDateTime",
+									"type": "DateTime",
+									"physicalType": "datetime"
+								}
+							},
+							{
+								"source": {
+									"name": "MMGroupKey",
+									"type": "String"
+								},
+								"sink": {
+									"name": "MMGroupKey",
+									"type": "String",
+									"physicalType": "nvarchar"
+								}
+							}
+						],
+						"typeConversion": true,
+						"typeConversionSettings": {
+							"allowDataTruncation": true,
+							"treatBooleanAsNumber": false
+						}
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "OperationalDB",
+						"type": "DatasetReference",
+						"parameters": {
+							"ConnectionStringKey": {
+								"value": "@pipeline().parameters.OperationalDBConnectionStringKey",
+								"type": "Expression"
+							},
+							"KeyVault_URL": {
+								"value": "@pipeline().parameters.KeyVault_URL",
+								"type": "Expression"
+							}
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "ItemInventory_Staging",
+						"type": "DatasetReference",
+						"parameters": {
+							"ConnectionStringKey": {
+								"value": "@pipeline().parameters.StagingDBConnectionStringKey",
+								"type": "Expression"
+							},
+							"KeyVault_URL": {
+								"value": "@pipeline().parameters.KeyVault_URL",
+								"type": "Expression"
+							}
+						}
+					}
+				]
+			},
+			{
+				"name": "Update ExtractLog with Latest UpdateDate",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "If New StockLedger Data",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					},
+					{
+						"activity": "If New ProductSupplierDetails Data",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					},
+					{
+						"activity": "Copy item inventory Data",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					},
+					{
+						"activity": "If New StockAdjustment Data",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					},
+					{
+						"activity": "If New StockAdjustmentItems Data",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "Update_ExtractLog_Staging",
+					"storedProcedureParameters": {
+						"LogId": {
+							"value": {
+								"value": "@{activity('Create Extract Log').output.firstRow.logRecord}",
+								"type": "Expression"
+							},
+							"type": "Int32"
+						},
+						"ExtractType": {
+							"value": "InventoryFact",
+							"type": "String"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "EnactorDW",
+					"type": "LinkedServiceReference",
+					"parameters": {
+						"ConnectionStringKey": {
+							"value": "@pipeline().parameters.StagingDBConnectionStringKey",
+							"type": "Expression"
+						},
+						"KeyVault_URL": {
+							"value": "@pipeline().parameters.KeyVault_URL",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			{
+				"name": "Check For New StockAdjustment Data",
+				"type": "Lookup",
+				"dependsOn": [
+					{
+						"activity": "Create Extract Log",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "MySqlSource",
+						"query": {
+							"value": "select count(1) as ct \nfrom stockadjustmentheaders\nwhere last_updated > '@{formatDateTime(variables('LastExtractDate'),'yyyy-MM-dd HH:mm:ss')}'",
+							"type": "Expression"
+						}
+					},
+					"dataset": {
+						"referenceName": "OperationalDB",
+						"type": "DatasetReference",
+						"parameters": {
+							"ConnectionStringKey": {
+								"value": "@pipeline().parameters.OperationalDBConnectionStringKey",
+								"type": "Expression"
+							},
+							"KeyVault_URL": {
+								"value": "@pipeline().parameters.KeyVault_URL",
+								"type": "Expression"
+							}
+						}
+					}
+				}
+			},
+			{
+				"name": "If New StockAdjustment Data",
+				"type": "IfCondition",
+				"dependsOn": [
+					{
+						"activity": "Check For New StockAdjustment Data",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@greater(activity('Check For New StockAdjustment Data').output.firstRow.ct,0)",
+						"type": "Expression"
+					},
+					"ifTrueActivities": [
+						{
+							"name": "Copy StockAdjustment Data",
+							"type": "Copy",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "MySqlSource",
+									"query": {
+										"value": "select Stock_Adjustment_Id,\nCreated_By_User_Id,\nFrom_Location_Id,\nTo_Location_Id,\nFrom_Inventory_Type,\nTo_Inventory_Type,\nFrom_Stock_Ledger_Trans_Type,\nTo_Stock_Ledger_Trans_Type,\nStatus,\nReason_Code_Id,\nLast_Updated,\nCAST(Last_Updated AS DATE) as StockAdustment_date\nfrom stockadjustmentheaders \nwhere (last_updated > '@{formatDateTime(variables('LastExtractDate'),'yyyy-MM-dd HH:mm:ss')}');",
+										"type": "Expression"
+									}
+								},
+								"sink": {
+									"type": "AzureSqlSink",
+									"writeBehavior": "upsert",
+									"upsertSettings": {
+										"useTempDB": true,
+										"keys": [
+											"Stock_Adjustment_Id"
+										]
+									},
+									"sqlWriterUseTableLock": false,
+									"disableMetricsCollection": false
+								},
+								"enableStaging": false,
+								"translator": {
+									"type": "TabularTranslator",
+									"mappings": [
+										{
+											"source": {
+												"name": "Stock_Adjustment_Id",
+												"type": "String"
+											},
+											"sink": {
+												"name": "Stock_Adjustment_Id",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "Created_By_User_Id",
+												"type": "String"
+											},
+											"sink": {
+												"name": "Created_By_User_Id",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "From_Location_Id",
+												"type": "String"
+											},
+											"sink": {
+												"name": "From_Location_Id",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "To_Location_Id",
+												"type": "String"
+											},
+											"sink": {
+												"name": "To_Location_Id",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "From_Inventory_Type",
+												"type": "String"
+											},
+											"sink": {
+												"name": "From_Inventory_Type",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "To_Inventory_Type",
+												"type": "String"
+											},
+											"sink": {
+												"name": "To_Inventory_Type",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "From_Stock_Ledger_Trans_Type",
+												"type": "String"
+											},
+											"sink": {
+												"name": "From_Stock_Ledger_Trans_Type",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "To_Stock_Ledger_Trans_Type",
+												"type": "String"
+											},
+											"sink": {
+												"name": "To_Stock_Ledger_Trans_Type",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "Status",
+												"type": "String"
+											},
+											"sink": {
+												"name": "Status",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "Reason_Code_Id",
+												"type": "String"
+											},
+											"sink": {
+												"name": "Reason_Code_Id",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "Last_Updated",
+												"type": "DateTime"
+											},
+											"sink": {
+												"name": "last_updated",
+												"type": "DateTime",
+												"physicalType": "datetime"
+											}
+										},
+										{
+											"source": {
+												"name": "StockAdustment_date",
+												"type": "DateTime"
+											},
+											"sink": {
+												"name": "StockAdustment_date",
+												"type": "DateTime",
+												"physicalType": "date"
+											}
+										}
+									],
+									"typeConversion": true,
+									"typeConversionSettings": {
+										"allowDataTruncation": true,
+										"treatBooleanAsNumber": false
+									}
+								}
+							},
+							"inputs": [
+								{
+									"referenceName": "OperationalDB",
+									"type": "DatasetReference",
+									"parameters": {
+										"ConnectionStringKey": {
+											"value": "@pipeline().parameters.OperationalDBConnectionStringKey",
+											"type": "Expression"
+										},
+										"KeyVault_URL": {
+											"value": "@pipeline().parameters.KeyVault_URL",
+											"type": "Expression"
+										}
+									}
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "StockAdjustment_Staging",
+									"type": "DatasetReference",
+									"parameters": {
+										"ConnectionStringKey": {
+											"value": "@pipeline().parameters.StagingDBConnectionStringKey",
+											"type": "Expression"
+										},
+										"KeyVault_URL": {
+											"value": "@pipeline().parameters.KeyVault_URL",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						}
+					]
+				}
+			},
+			{
+				"name": "DeleteCurrentInventoryData",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "Create Extract Log",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "truncateStagingInventoryDailySnapshots"
+				},
+				"linkedServiceName": {
+					"referenceName": "EnactorDW_Staging",
+					"type": "LinkedServiceReference",
+					"parameters": {
+						"ConnectionStringKey": {
+							"value": "@pipeline().parameters.StagingDBConnectionStringKey",
+							"type": "Expression"
+						},
+						"KeyVault_URL": {
+							"value": "@pipeline().parameters.KeyVault_URL",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			{
+				"name": "Check For New StockAdjustmentItems Data",
+				"type": "Lookup",
+				"dependsOn": [
+					{
+						"activity": "Create Extract Log",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "MySqlSource",
+						"query": {
+							"value": "select count(1) as ct \nfrom stockadjustmentitems\nwhere last_updated > '@{formatDateTime(variables('LastExtractDate'),'yyyy-MM-dd HH:mm:ss')}'",
+							"type": "Expression"
+						}
+					},
+					"dataset": {
+						"referenceName": "OperationalDB",
+						"type": "DatasetReference",
+						"parameters": {
+							"ConnectionStringKey": {
+								"value": "@pipeline().parameters.OperationalDBConnectionStringKey",
+								"type": "Expression"
+							},
+							"KeyVault_URL": {
+								"value": "@pipeline().parameters.KeyVault_URL",
+								"type": "Expression"
+							}
+						}
+					}
+				}
+			},
+			{
+				"name": "If New StockAdjustmentItems Data",
+				"type": "IfCondition",
+				"dependsOn": [
+					{
+						"activity": "Check For New StockAdjustmentItems Data",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@greater(activity('Check For New StockAdjustmentItems Data').output.firstRow.ct,0)",
+						"type": "Expression"
+					},
+					"ifTrueActivities": [
+						{
+							"name": "Copy StockAdjustmentItems Data",
+							"type": "Copy",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "MySqlSource",
+									"query": {
+										"value": "select Stock_Adjustment_Id,\nProduct_Id,\nQty,\nReason_Id,\nLast_Updated\nfrom stockadjustmentitems \nwhere (last_updated > '@{formatDateTime(variables('LastExtractDate'),'yyyy-MM-dd HH:mm:ss')}');",
+										"type": "Expression"
+									}
+								},
+								"sink": {
+									"type": "AzureSqlSink",
+									"writeBehavior": "upsert",
+									"upsertSettings": {
+										"useTempDB": true,
+										"keys": [
+											"Stock_Adjustment_Id",
+											"Product_Id"
+										]
+									},
+									"sqlWriterUseTableLock": false,
+									"disableMetricsCollection": false
+								},
+								"enableStaging": false,
+								"translator": {
+									"type": "TabularTranslator",
+									"mappings": [
+										{
+											"source": {
+												"name": "Stock_Adjustment_Id",
+												"type": "String"
+											},
+											"sink": {
+												"name": "Stock_Adjustment_Id",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "Product_Id",
+												"type": "String"
+											},
+											"sink": {
+												"name": "Product_Id",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "Qty",
+												"type": "Int32"
+											},
+											"sink": {
+												"name": "Qty",
+												"type": "Double",
+												"physicalType": "float"
+											}
+										},
+										{
+											"source": {
+												"name": "Reason_Id",
+												"type": "String"
+											},
+											"sink": {
+												"name": "Reason_Id",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "Last_Updated",
+												"type": "DateTime"
+											},
+											"sink": {
+												"name": "last_updated",
+												"type": "DateTime",
+												"physicalType": "datetime"
+											}
+										}
+									],
+									"typeConversion": true,
+									"typeConversionSettings": {
+										"allowDataTruncation": true,
+										"treatBooleanAsNumber": false
+									}
+								}
+							},
+							"inputs": [
+								{
+									"referenceName": "OperationalDB",
+									"type": "DatasetReference",
+									"parameters": {
+										"ConnectionStringKey": {
+											"value": "@pipeline().parameters.OperationalDBConnectionStringKey",
+											"type": "Expression"
+										},
+										"KeyVault_URL": {
+											"value": "@pipeline().parameters.KeyVault_URL",
+											"type": "Expression"
+										}
+									}
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "StockAdjustmentItems_Staging",
+									"type": "DatasetReference",
+									"parameters": {
+										"ConnectionStringKey": {
+											"value": "@pipeline().parameters.StagingDBConnectionStringKey",
+											"type": "Expression"
+										},
+										"KeyVault_URL": {
+											"value": "@pipeline().parameters.KeyVault_URL",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						}
+					]
+				}
+			}
+		],
+		"parameters": {
+			"StagingDBConnectionStringKey": {
+				"type": "string",
+				"defaultValue": "EnactorBI-StagingDB-ConnectionString"
+			},
+			"OperationalDBConnectionStringKey": {
+				"type": "string",
+				"defaultValue": "Enactor-OperationalDB-ConnectionString"
+			},
+			"KeyVault_URL": {
+				"type": "string",
+				"defaultValue": "https://PR-EVAL-BI-Key-Vault.vault.azure.net/"
+			}
+		},
+		"variables": {
+			"LastExtractDate": {
+				"type": "String"
+			},
+			"StockLedgerTransactionCount": {
+				"type": "String"
+			},
+			"StockLedgerTransactionTypeCount": {
+				"type": "String"
+			},
+			"ItemInventoryStagingCount": {
+				"type": "String"
+			},
+			"LastExtractDateTimestamp": {
+				"type": "String"
+			},
+			"SupplierProduct Count": {
+				"type": "String"
+			},
+			"ProductSupplierDetails_Count": {
+				"type": "String"
+			},
+			"StockAdjustment_Count": {
+				"type": "String"
+			},
+			"StockAdjustmentItemsCount": {
+				"type": "String"
+			}
+		},
+		"folder": {
+			"name": "OperationalToStaging"
+		},
+		"annotations": [],
+		"lastPublishTime": "2023-06-26T10:08:24Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

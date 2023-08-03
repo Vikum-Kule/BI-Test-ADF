@@ -1,0 +1,136 @@
+{
+	"name": "FlashSales_ProductSales_Staging",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "EnactorDW_Staging",
+			"type": "LinkedServiceReference",
+			"parameters": {
+				"ConnectionStringKey": {
+					"value": "@dataset().ConnectionStringKey",
+					"type": "Expression"
+				},
+				"KeyVault_URL": {
+					"value": "@dataset().KeyVault_URL",
+					"type": "Expression"
+				}
+			}
+		},
+		"parameters": {
+			"KeyVault_URL": {
+				"type": "string",
+				"defaultValue": "https://PR-EVAL-BI-Key-Vault.vault.azure.net/"
+			},
+			"ConnectionStringKey": {
+				"type": "string",
+				"defaultValue": "EnactorBI-StagingDB-ConnectionString"
+			}
+		},
+		"folder": {
+			"name": "FlashSalesDatasets/Staging"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [
+			{
+				"name": "transaction_key",
+				"type": "nvarchar"
+			},
+			{
+				"name": "line_number",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "product_id",
+				"type": "nvarchar"
+			},
+			{
+				"name": "MMGroupKey",
+				"type": "nvarchar"
+			},
+			{
+				"name": "BrandKey",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Salesperson",
+				"type": "nvarchar"
+			},
+			{
+				"name": "User_id",
+				"type": "nvarchar"
+			},
+			{
+				"name": "tax_rate_id",
+				"type": "nvarchar"
+			},
+			{
+				"name": "SalesValue",
+				"type": "decimal",
+				"precision": 17,
+				"scale": 6
+			},
+			{
+				"name": "OrdersValue",
+				"type": "decimal",
+				"precision": 17,
+				"scale": 6
+			},
+			{
+				"name": "ReturnsValue",
+				"type": "decimal",
+				"precision": 17,
+				"scale": 6
+			},
+			{
+				"name": "PromoValue",
+				"type": "decimal",
+				"precision": 17,
+				"scale": 6
+			},
+			{
+				"name": "ManualDiscValue",
+				"type": "decimal",
+				"precision": 17,
+				"scale": 6
+			},
+			{
+				"name": "PriceOverridesValue",
+				"type": "decimal",
+				"precision": 17,
+				"scale": 6
+			},
+			{
+				"name": "tax_value",
+				"type": "decimal",
+				"precision": 17,
+				"scale": 6
+			},
+			{
+				"name": "Sales_Quantity",
+				"type": "float",
+				"precision": 15
+			},
+			{
+				"name": "Orders_Quantity",
+				"type": "float",
+				"precision": 15
+			},
+			{
+				"name": "Returns_Quantity",
+				"type": "float",
+				"precision": 15
+			},
+			{
+				"name": "last_updated",
+				"type": "datetime",
+				"precision": 23,
+				"scale": 3
+			}
+		],
+		"typeProperties": {
+			"schema": "dbo",
+			"table": "FlashSales_ProductSales_Staging"
+		}
+	}
+}

@@ -1,0 +1,87 @@
+{
+	"name": "D1-Test",
+	"properties": {
+		"activities": [
+			{
+				"name": "TestSupplierProductData",
+				"type": "ExecuteDataFlow",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataflow": {
+						"referenceName": "SupplierProductDimensionUpdate",
+						"type": "DataFlowReference",
+						"parameters": {
+							"LastUpdatedDate": "'2000-01-01 00:00:00'"
+						},
+						"datasetParameters": {
+							"SupplierProductStaging": {
+								"KeyVault_URL": "https://PR-EVAL-BI-Key-Vault.vault.azure.net/",
+								"ConnectionStringKey": "EnactorBI-StagingDB-ConnectionString"
+							},
+							"DimSupplierProduct": {
+								"ConnectionStringKey": "EnactorBI-DataWarehouseDB-ConnectionString",
+								"KeyVault_URL": "https://PR-EVAL-BI-Key-Vault.vault.azure.net/"
+							},
+							"DimSupplier": {
+								"ConnectionStringKey": "EnactorBI-DataWarehouseDB-ConnectionString",
+								"KeyVault_URL": "https://PR-EVAL-BI-Key-Vault.vault.azure.net/"
+							},
+							"DimProduct": {
+								"ConnectionStringKey": "EnactorBI-DataWarehouseDB-ConnectionString",
+								"KeyVault_URL": "https://PR-EVAL-BI-Key-Vault.vault.azure.net/"
+							},
+							"UpdateDimSupplierProduct": {
+								"ConnectionStringKey": "EnactorBI-DataWarehouseDB-ConnectionString",
+								"KeyVault_URL": "https://PR-EVAL-BI-Key-Vault.vault.azure.net/"
+							},
+							"InsertDimSupplierProduct": {
+								"ConnectionStringKey": "EnactorBI-DataWarehouseDB-ConnectionString",
+								"KeyVault_URL": "https://PR-EVAL-BI-Key-Vault.vault.azure.net/"
+							}
+						}
+					},
+					"compute": {
+						"coreCount": 8,
+						"computeType": "General"
+					},
+					"traceLevel": "Fine"
+				}
+			}
+		],
+		"concurrency": 1,
+		"parameters": {
+			"StagingDBConnectionStringKey": {
+				"type": "string",
+				"defaultValue": "EnactorBI-StagingDB-ConnectionString"
+			},
+			"DataWarehouseDBConnectionStringKey": {
+				"type": "string",
+				"defaultValue": "EnactorBI-DataWarehouseDB-ConnectionString"
+			},
+			"KeyVault_URL": {
+				"type": "string",
+				"defaultValue": "https://PR-EVAL-BI-Key-Vault.vault.azure.net/"
+			}
+		},
+		"variables": {
+			"LastUpdateDate": {
+				"type": "String",
+				"defaultValue": "'2000-01-01'"
+			}
+		},
+		"folder": {
+			"name": "Test"
+		},
+		"annotations": [],
+		"lastPublishTime": "2023-06-14T07:28:20Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

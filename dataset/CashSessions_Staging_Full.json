@@ -1,0 +1,158 @@
+{
+	"name": "CashSessions_Staging_Full",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "EnactorDW_Staging",
+			"type": "LinkedServiceReference",
+			"parameters": {
+				"ConnectionStringKey": {
+					"value": "@dataset().ConnectionStringKey",
+					"type": "Expression"
+				},
+				"KeyVault_URL": {
+					"value": "@dataset().KeyVault_URL",
+					"type": "Expression"
+				}
+			}
+		},
+		"parameters": {
+			"KeyVault_URL": {
+				"type": "string",
+				"defaultValue": "https://PR-EVAL-BI-Key-Vault.vault.azure.net/"
+			},
+			"ConnectionStringKey": {
+				"type": "string",
+				"defaultValue": "EnactorBI-StagingDB-ConnectionString"
+			}
+		},
+		"folder": {
+			"name": "Staging/Facts"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [
+			{
+				"name": "Session_Number",
+				"type": "bigint",
+				"precision": 19
+			},
+			{
+				"name": "Location_Id",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Type",
+				"type": "bigint",
+				"precision": 19
+			},
+			{
+				"name": "Owner_Id",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Start_Date",
+				"type": "datetime",
+				"precision": 23,
+				"scale": 3
+			},
+			{
+				"name": "End_Date",
+				"type": "datetime",
+				"precision": 23,
+				"scale": 3
+			},
+			{
+				"name": "Status",
+				"type": "bigint",
+				"precision": 19
+			},
+			{
+				"name": "Is_Banked",
+				"type": "tinyint",
+				"precision": 3
+			},
+			{
+				"name": "Is_Opening_Value_Set",
+				"type": "tinyint",
+				"precision": 3
+			},
+			{
+				"name": "Item_Id",
+				"type": "bigint",
+				"precision": 19
+			},
+			{
+				"name": "Currency_Id",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Base_Currency_Id",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Tender_Id",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Expected_Value",
+				"type": "bigint",
+				"precision": 19
+			},
+			{
+				"name": "Base_Expected_Value",
+				"type": "bigint",
+				"precision": 19
+			},
+			{
+				"name": "Floated_Value",
+				"type": "bigint",
+				"precision": 19
+			},
+			{
+				"name": "Base_Floated_Value",
+				"type": "bigint",
+				"precision": 19
+			},
+			{
+				"name": "Opening_Balance_Value",
+				"type": "bigint",
+				"precision": 19
+			},
+			{
+				"name": "Base_Opening_Balance_Value",
+				"type": "bigint",
+				"precision": 19
+			},
+			{
+				"name": "Counted_Value",
+				"type": "bigint",
+				"precision": 19
+			},
+			{
+				"name": "Base_Counted_Value",
+				"type": "bigint",
+				"precision": 19
+			},
+			{
+				"name": "Expected_Quantity",
+				"type": "float",
+				"precision": 15
+			},
+			{
+				"name": "Counted_Quantity",
+				"type": "float",
+				"precision": 15
+			},
+			{
+				"name": "Last_Updated",
+				"type": "datetime",
+				"precision": 23,
+				"scale": 3
+			}
+		],
+		"typeProperties": {
+			"schema": "dbo",
+			"table": "CashSessions_Staging_Full"
+		}
+	}
+}

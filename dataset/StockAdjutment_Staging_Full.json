@@ -1,0 +1,103 @@
+{
+	"name": "StockAdjutment_Staging_Full",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "EnactorDW_Staging",
+			"type": "LinkedServiceReference",
+			"parameters": {
+				"ConnectionStringKey": {
+					"value": "@dataset().ConnectionStringKey",
+					"type": "Expression"
+				},
+				"KeyVault_URL": {
+					"value": "@dataset().KeyVault_URL",
+					"type": "Expression"
+				}
+			}
+		},
+		"parameters": {
+			"ConnectionStringKey": {
+				"type": "string",
+				"defaultValue": "EnactorBI-StagingDB-ConnectionString"
+			},
+			"KeyVault_URL": {
+				"type": "string",
+				"defaultValue": "https://PR-EVAL-BI-Key-Vault.vault.azure.net/"
+			}
+		},
+		"folder": {
+			"name": "Staging/Facts"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [
+			{
+				"name": "Stock_Adjustment_Id",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Created_By_User_Id",
+				"type": "nvarchar"
+			},
+			{
+				"name": "From_Location_Id",
+				"type": "nvarchar"
+			},
+			{
+				"name": "To_Location_Id",
+				"type": "nvarchar"
+			},
+			{
+				"name": "From_Inventory_Type",
+				"type": "nvarchar"
+			},
+			{
+				"name": "To_Inventory_Type",
+				"type": "nvarchar"
+			},
+			{
+				"name": "From_Stock_Ledger_Trans_Type",
+				"type": "nvarchar"
+			},
+			{
+				"name": "To_Stock_Ledger_Trans_Type",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Status",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Reason_Code_Id",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Product_Id",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Qty",
+				"type": "float",
+				"precision": 15
+			},
+			{
+				"name": "Reason_Id",
+				"type": "nvarchar"
+			},
+			{
+				"name": "last_updated",
+				"type": "datetime",
+				"precision": 23,
+				"scale": 3
+			},
+			{
+				"name": "StockAdustment_date",
+				"type": "date"
+			}
+		],
+		"typeProperties": {
+			"schema": "dbo",
+			"table": "vw_StockAdjustment_Full"
+		}
+	}
+}

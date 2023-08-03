@@ -1,0 +1,43 @@
+{
+	"name": "en-bi-adf-demo01",
+	"properties": {
+		"globalParameters": {
+			"KeyVault_URL": {
+				"type": "string",
+				"value": "https://en-bi-kv-demo01.vault.azure.net/"
+			},
+			"SubscriptionID": {
+				"type": "string",
+				"value": "33fb0613-d250-4bb2-ba76-4385eca3d510"
+			},
+			"TenantID": {
+				"type": "string",
+				"value": "1d10e28a-ceee-4836-9493-c5bbbb817996"
+			},
+			"AS_Server": {
+				"type": "string",
+				"value": "enbiasdemo01"
+			},
+			"AS_Database": {
+				"type": "string",
+				"value": "Enactor Retail Sales"
+			},
+			"Region": {
+				"type": "string",
+				"value": "uksouth"
+			}
+		}
+	},
+	"location": "uksouth",
+	"identity": {
+		"type": "SystemAssigned,UserAssigned",
+		"principalId": "5e7f3b54-7814-48d7-9bd3-9b828453e62a",
+		"tenantId": "1d10e28a-ceee-4836-9493-c5bbbb817996",
+		"userAssignedIdentities": {
+			"/subscriptions/33fb0613-d250-4bb2-ba76-4385eca3d510/resourcegroups/en-bi-rg-demo01/providers/Microsoft.ManagedIdentity/userAssignedIdentities/en-bi-mi-demo01": {
+				"clientId": "ced8db6d-1f1a-46e0-87ef-be095010cbda",
+				"principalId": "e3ee74d3-b6cd-4a02-b119-f0b854554905"
+			}
+		}
+	}
+}

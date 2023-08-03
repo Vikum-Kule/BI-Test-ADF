@@ -1,0 +1,100 @@
+{
+	"name": "RetailTransactions_Staging",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "EnactorDW_Staging",
+			"type": "LinkedServiceReference",
+			"parameters": {
+				"ConnectionStringKey": {
+					"value": "@dataset().ConnectionStringKey",
+					"type": "Expression"
+				},
+				"KeyVault_URL": {
+					"value": "@dataset().KeyVault_URL",
+					"type": "Expression"
+				}
+			}
+		},
+		"parameters": {
+			"ConnectionStringKey": {
+				"type": "string",
+				"defaultValue": "EnactorBI-StagingDB-ConnectionString"
+			},
+			"KeyVault_URL": {
+				"type": "string",
+				"defaultValue": "https://PR-EVAL-BI-Key-Vault.vault.azure.net/"
+			}
+		},
+		"folder": {
+			"name": "Staging/Facts"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [
+			{
+				"name": "transaction_key",
+				"type": "nvarchar"
+			},
+			{
+				"name": "transaction_Id",
+				"type": "nvarchar"
+			},
+			{
+				"name": "transaction_number",
+				"type": "bigint",
+				"precision": 19
+			},
+			{
+				"name": "terminal_number",
+				"type": "bigint",
+				"precision": 19
+			},
+			{
+				"name": "device_id",
+				"type": "nvarchar"
+			},
+			{
+				"name": "location_id",
+				"type": "nvarchar"
+			},
+			{
+				"name": "application_id",
+				"type": "nvarchar"
+			},
+			{
+				"name": "base_currency_id",
+				"type": "nvarchar"
+			},
+			{
+				"name": "completed_date_time",
+				"type": "datetime",
+				"precision": 23,
+				"scale": 3
+			},
+			{
+				"name": "TradeDate",
+				"type": "date"
+			},
+			{
+				"name": "Trading_Day",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "Trading_Year",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "last_updated",
+				"type": "datetime",
+				"precision": 23,
+				"scale": 3
+			}
+		],
+		"typeProperties": {
+			"schema": "dbo",
+			"table": "Retail_Transactions_Staging"
+		}
+	}
+}

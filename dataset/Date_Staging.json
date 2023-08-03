@@ -1,0 +1,86 @@
+{
+	"name": "Date_Staging",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "EnactorDW_Staging",
+			"type": "LinkedServiceReference",
+			"parameters": {
+				"ConnectionStringKey": {
+					"value": "@dataset().ConnectionStringKey",
+					"type": "Expression"
+				},
+				"KeyVault_URL": {
+					"value": "@dataset().KeyVault_URL",
+					"type": "Expression"
+				}
+			}
+		},
+		"parameters": {
+			"ConnectionStringKey": {
+				"type": "string",
+				"defaultValue": "EnactorBI-StagingDB-ConnectionString"
+			},
+			"KeyVault_URL": {
+				"type": "string",
+				"defaultValue": "https://PR-EVAL-BI-Key-Vault.vault.azure.net/"
+			}
+		},
+		"folder": {
+			"name": "Staging/Dimensions"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [
+			{
+				"name": "Date",
+				"type": "date"
+			},
+			{
+				"name": "Day_of_Week",
+				"type": "smallint",
+				"precision": 5
+			},
+			{
+				"name": "Fiscal_Year",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "Month_In_Year",
+				"type": "smallint",
+				"precision": 5
+			},
+			{
+				"name": "Week_In_Year",
+				"type": "smallint",
+				"precision": 5
+			},
+			{
+				"name": "Period",
+				"type": "smallint",
+				"precision": 5
+			},
+			{
+				"name": "Month_In_Period",
+				"type": "smallint",
+				"precision": 5
+			},
+			{
+				"name": "Quarter",
+				"type": "smallint",
+				"precision": 5
+			},
+			{
+				"name": "last_updated",
+				"type": "datetime",
+				"precision": 23,
+				"scale": 3
+			}
+		],
+		"typeProperties": {
+			"schema": "dbo",
+			"table": "Date_Staging"
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

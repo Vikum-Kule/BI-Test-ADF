@@ -1,0 +1,124 @@
+{
+	"name": "TerminalExceptions_Staging",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "EnactorDW_Staging",
+			"type": "LinkedServiceReference",
+			"parameters": {
+				"ConnectionStringKey": {
+					"value": "@dataset().ConnectionStringKey",
+					"type": "Expression"
+				},
+				"KeyVault_URL": {
+					"value": "@dataset().KeyVault_URL",
+					"type": "Expression"
+				}
+			}
+		},
+		"parameters": {
+			"ConnectionStringKey": {
+				"type": "string",
+				"defaultValue": "EnactorBI-StagingDB-ConnectionString"
+			},
+			"KeyVault_URL": {
+				"type": "string",
+				"defaultValue": "https://PR-EVAL-BI-Key-Vault.vault.azure.net/"
+			}
+		},
+		"folder": {
+			"name": "Staging/Facts"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [
+			{
+				"name": "transaction_key",
+				"type": "nvarchar"
+			},
+			{
+				"name": "line_number",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "modifier_line_number",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "product_id",
+				"type": "nvarchar"
+			},
+			{
+				"name": "MMGroupKey",
+				"type": "nvarchar"
+			},
+			{
+				"name": "BrandKey",
+				"type": "nvarchar"
+			},
+			{
+				"name": "exception_type",
+				"type": "nvarchar"
+			},
+			{
+				"name": "user_id",
+				"type": "nvarchar"
+			},
+			{
+				"name": "authorising_user_id",
+				"type": "nvarchar"
+			},
+			{
+				"name": "reason_type",
+				"type": "nvarchar"
+			},
+			{
+				"name": "reason_code",
+				"type": "nvarchar"
+			},
+			{
+				"name": "exception_value",
+				"type": "decimal",
+				"precision": 17,
+				"scale": 6
+			},
+			{
+				"name": "line_quantity",
+				"type": "float",
+				"precision": 15
+			},
+			{
+				"name": "original_price",
+				"type": "decimal",
+				"precision": 17,
+				"scale": 6
+			},
+			{
+				"name": "overridden_price",
+				"type": "decimal",
+				"precision": 17,
+				"scale": 6
+			},
+			{
+				"name": "original_transaction_id",
+				"type": "nvarchar"
+			},
+			{
+				"name": "last_updated",
+				"type": "datetime",
+				"precision": 23,
+				"scale": 3
+			},
+			{
+				"name": "is_employee_transaction",
+				"type": "tinyint",
+				"precision": 3
+			}
+		],
+		"typeProperties": {
+			"schema": "dbo",
+			"table": "TerminalExceptions_Staging"
+		}
+	}
+}

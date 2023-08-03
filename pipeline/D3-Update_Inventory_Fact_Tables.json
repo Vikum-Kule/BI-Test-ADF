@@ -1,0 +1,994 @@
+{
+	"name": "D3-Update_Inventory_Fact_Tables",
+	"properties": {
+		"activities": [
+			{
+				"name": "Lookup Previous Staging Extract Date",
+				"description": "Get penultimate extract date from staging extract log",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": "select \nFORMAT(max(extractDateTime),'yyyy-MM-ddTHH:mm:ssZ') as LastSuccessfulExtractDate\nfrom extractlog\nwhere extractdatetime not in (\nselect max(extractDateTime) from extractlog\nwhere extracttype = 'InventoryFact'\nand extractresult = 'Success')\nand extracttype = 'InventoryFact'\nand extractresult = 'Success'\n\n",
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "Brand_Staging",
+						"type": "DatasetReference",
+						"parameters": {
+							"ConnectionStringKey": "@pipeline().parameters.StagingDBConnectionStringKey",
+							"KeyVault_URL": "@pipeline().parameters.KeyVault_URL"
+						}
+					}
+				}
+			},
+			{
+				"name": "Create Update Log Entry",
+				"type": "Lookup",
+				"dependsOn": [
+					{
+						"activity": "Set Last Update Date",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": {
+							"value": "@concat('insert into UpdateLog (UpdateDateTime, LastUpdatedDate, UpdateType,UpdateResult ) \nvalues(getdate(),''',formatDateTime(activity('Lookup Previous Staging Extract Date').output.firstRow.LastSuccessfulExtractDate,'yyyy-MM-dd HH:mm:ss'),''',\n''InventoryFact'',\n''Started'');\nselect SCOPE_IDENTITY() as logRecord')",
+							"type": "Expression"
+						},
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "DimLocation",
+						"type": "DatasetReference",
+						"parameters": {
+							"ConnectionStringKey": {
+								"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+								"type": "Expression"
+							},
+							"KeyVault_URL": {
+								"value": "@pipeline().parameters.KeyVault_URL",
+								"type": "Expression"
+							}
+						}
+					}
+				}
+			},
+			{
+				"name": "Set Last Update Date",
+				"description": "Get Last Update datetime and convert to UTC (for use by ProductSales Update flow)",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "Lookup Previous Staging Extract Date",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "LastUpdateDate",
+					"value": {
+						"value": "@{convertFromUtc(activity('Lookup Previous Staging Extract Date').output.firstRow.LastSuccessfulExtractDate,'GMT Standard Time')}",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "Complete Update Log Entry",
+				"description": "Set Extract Log Entry to Success",
+				"type": "Lookup",
+				"dependsOn": [
+					{
+						"activity": "If EndOfMonth",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": {
+							"value": "update updateLog \nset UpdateResult = 'Success',\nLastUpdatedDate = getdate()\nwhere logid = @{activity('Create Update Log Entry').output.firstRow.logRecord};\n\nselect 0 res",
+							"type": "Expression"
+						},
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "DimLocation",
+						"type": "DatasetReference",
+						"parameters": {
+							"ConnectionStringKey": {
+								"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+								"type": "Expression"
+							},
+							"KeyVault_URL": {
+								"value": "@pipeline().parameters.KeyVault_URL",
+								"type": "Expression"
+							}
+						}
+					}
+				}
+			},
+			{
+				"name": "InventoryLevelsUpdate",
+				"type": "ExecuteDataFlow",
+				"dependsOn": [
+					{
+						"activity": "DeleteCurrentInventoryData",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "1.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataflow": {
+						"referenceName": "InventoryLevelsUpdate",
+						"type": "DataFlowReference",
+						"parameters": {
+							"LastUpdatedDate": {
+								"value": "'@{formatDateTime(variables('LastUpdateDate'),'yyyy-MM-dd HH:mm:ss')}'",
+								"type": "Expression"
+							}
+						},
+						"datasetParameters": {
+							"InventoryLevelsStaging": {
+								"ConnectionStringKey": {
+									"value": "@pipeline().parameters.StagingDBConnectionStringKey",
+									"type": "Expression"
+								},
+								"KeyVault_URL": {
+									"value": "@pipeline().parameters.KeyVault_URL",
+									"type": "Expression"
+								}
+							},
+							"DimLocation": {
+								"ConnectionStringKey": {
+									"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+									"type": "Expression"
+								},
+								"KeyVault_URL": {
+									"value": "@pipeline().parameters.KeyVault_URL",
+									"type": "Expression"
+								}
+							},
+							"DimProduct": {
+								"ConnectionStringKey": {
+									"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+									"type": "Expression"
+								},
+								"KeyVault_URL": {
+									"value": "@pipeline().parameters.KeyVault_URL",
+									"type": "Expression"
+								}
+							},
+							"DimInventoryType": {
+								"ConnectionStringKey": {
+									"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+									"type": "Expression"
+								},
+								"KeyVault_URL": {
+									"value": "@pipeline().parameters.KeyVault_URL",
+									"type": "Expression"
+								}
+							},
+							"DimMMG": {
+								"ConnectionStringKey": {
+									"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+									"type": "Expression"
+								},
+								"KeyVault_URL": {
+									"value": "@pipeline().parameters.KeyVault_URL",
+									"type": "Expression"
+								}
+							},
+							"DimDate": {
+								"ConnectionStringKey": {
+									"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+									"type": "Expression"
+								},
+								"KeyVault_URL": {
+									"value": "@pipeline().parameters.KeyVault_URL",
+									"type": "Expression"
+								}
+							},
+							"WriteToFactInventoryLevels": {
+								"ConnectionStringKey": {
+									"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+									"type": "Expression"
+								},
+								"KeyVault_URL": {
+									"value": "@pipeline().parameters.KeyVault_URL",
+									"type": "Expression"
+								}
+							}
+						}
+					},
+					"compute": {
+						"coreCount": 8,
+						"computeType": "General"
+					},
+					"traceLevel": "Fine"
+				}
+			},
+			{
+				"name": "StockledgerTransactionsUpdate",
+				"type": "ExecuteDataFlow",
+				"dependsOn": [
+					{
+						"activity": "DeleteCurrentInventoryData",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataflow": {
+						"referenceName": "StockledgerTransUpdate",
+						"type": "DataFlowReference",
+						"parameters": {
+							"LastUpdatedDate": {
+								"value": "'@{formatDateTime(variables('LastUpdateDate'),'yyyy-MM-dd HH:mm:ss')}'",
+								"type": "Expression"
+							}
+						},
+						"datasetParameters": {
+							"StockledgerTransactionsStaging": {
+								"ConnectionStringKey": {
+									"value": "@pipeline().parameters.StagingDBConnectionStringKey",
+									"type": "Expression"
+								},
+								"KeyVault_URL": {
+									"value": "@pipeline().parameters.KeyVault_URL",
+									"type": "Expression"
+								}
+							},
+							"DimLocation": {
+								"ConnectionStringKey": {
+									"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+									"type": "Expression"
+								},
+								"KeyVault_URL": {
+									"value": "@pipeline().parameters.KeyVault_URL",
+									"type": "Expression"
+								}
+							},
+							"DimProduct": {
+								"ConnectionStringKey": {
+									"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+									"type": "Expression"
+								},
+								"KeyVault_URL": {
+									"value": "@pipeline().parameters.KeyVault_URL",
+									"type": "Expression"
+								}
+							},
+							"DimStockledgerTrType": {
+								"ConnectionStringKey": {
+									"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+									"type": "Expression"
+								},
+								"KeyVault_URL": {
+									"value": "@pipeline().parameters.KeyVault_URL",
+									"type": "Expression"
+								}
+							},
+							"DimDate": {
+								"ConnectionStringKey": {
+									"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+									"type": "Expression"
+								},
+								"KeyVault_URL": {
+									"value": "@pipeline().parameters.KeyVault_URL",
+									"type": "Expression"
+								}
+							},
+							"WriteToFactStockledgerTransactions": {
+								"KeyVault_URL": {
+									"value": "@pipeline().parameters.KeyVault_URL",
+									"type": "Expression"
+								},
+								"ConnectionStringKey": {
+									"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+									"type": "Expression"
+								}
+							}
+						}
+					},
+					"compute": {
+						"coreCount": 8,
+						"computeType": "General"
+					},
+					"traceLevel": "Fine"
+				}
+			},
+			{
+				"name": "DeleteCurrentInventoryData",
+				"description": "Delete daily snapshots except for the End of month and today's snapshots.",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "Regroup",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "truncateDWInventoryDailySnapshots"
+				},
+				"linkedServiceName": {
+					"referenceName": "EnactorDW",
+					"type": "LinkedServiceReference",
+					"parameters": {
+						"ConnectionStringKey": {
+							"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+							"type": "Expression"
+						},
+						"KeyVault_URL": {
+							"value": "@pipeline().parameters.KeyVault_URL",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			{
+				"name": "StockAdjustmentUpdate",
+				"type": "ExecuteDataFlow",
+				"dependsOn": [
+					{
+						"activity": "DeleteCurrentInventoryData",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "1.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataflow": {
+						"referenceName": "StockAdjustmentUpdate",
+						"type": "DataFlowReference",
+						"parameters": {
+							"LastUpdatedDate": {
+								"value": "'@{formatDateTime(variables('LastUpdateDate'))}'",
+								"type": "Expression"
+							}
+						},
+						"datasetParameters": {
+							"StockAdjustmentStaging": {
+								"ConnectionStringKey": {
+									"value": "@pipeline().parameters.StagingDBConnectionStringKey",
+									"type": "Expression"
+								},
+								"KeyVault_URL": {
+									"value": "@pipeline().parameters.KeyVault_URL",
+									"type": "Expression"
+								}
+							},
+							"DimFromLocation": {
+								"ConnectionStringKey": {
+									"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+									"type": "Expression"
+								},
+								"KeyVault_URL": {
+									"value": "@pipeline().parameters.KeyVault_URL",
+									"type": "Expression"
+								}
+							},
+							"DimProduct": {
+								"ConnectionStringKey": {
+									"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+									"type": "Expression"
+								},
+								"KeyVault_URL": {
+									"value": "@pipeline().parameters.KeyVault_URL",
+									"type": "Expression"
+								}
+							},
+							"DimfromInventoryType": {
+								"ConnectionStringKey": {
+									"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+									"type": "Expression"
+								},
+								"KeyVault_URL": {
+									"value": "@pipeline().parameters.KeyVault_URL",
+									"type": "Expression"
+								}
+							},
+							"DimToLocation": {
+								"ConnectionStringKey": {
+									"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+									"type": "Expression"
+								},
+								"KeyVault_URL": {
+									"value": "@pipeline().parameters.KeyVault_URL",
+									"type": "Expression"
+								}
+							},
+							"DimtoInventoryType": {
+								"ConnectionStringKey": {
+									"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+									"type": "Expression"
+								},
+								"KeyVault_URL": {
+									"value": "@pipeline().parameters.KeyVault_URL",
+									"type": "Expression"
+								}
+							},
+							"DimfromStockledgerTrType": {
+								"ConnectionStringKey": {
+									"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+									"type": "Expression"
+								},
+								"KeyVault_URL": {
+									"value": "@pipeline().parameters.KeyVault_URL",
+									"type": "Expression"
+								}
+							},
+							"DimtoStockledgerTrType": {
+								"ConnectionStringKey": {
+									"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+									"type": "Expression"
+								},
+								"KeyVault_URL": {
+									"value": "@pipeline().parameters.KeyVault_URL",
+									"type": "Expression"
+								}
+							},
+							"DimUser": {
+								"ConnectionStringKey": {
+									"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+									"type": "Expression"
+								},
+								"KeyVault_URL": {
+									"value": "@pipeline().parameters.KeyVault_URL",
+									"type": "Expression"
+								}
+							},
+							"DimReason": {
+								"ConnectionStringKey": {
+									"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+									"type": "Expression"
+								},
+								"KeyVault_URL": {
+									"value": "@pipeline().parameters.KeyVault_URL",
+									"type": "Expression"
+								}
+							},
+							"DimDate": {
+								"ConnectionStringKey": {
+									"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+									"type": "Expression"
+								},
+								"KeyVault_URL": {
+									"value": "@pipeline().parameters.KeyVault_URL",
+									"type": "Expression"
+								}
+							},
+							"WriteToFactStockAdjustment": {
+								"ConnectionStringKey": {
+									"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+									"type": "Expression"
+								},
+								"KeyVault_URL": {
+									"value": "@pipeline().parameters.KeyVault_URL",
+									"type": "Expression"
+								}
+							}
+						}
+					},
+					"compute": {
+						"coreCount": 8,
+						"computeType": "General"
+					},
+					"traceLevel": "Fine"
+				}
+			},
+			{
+				"name": "InsertMissingProductKey",
+				"type": "ExecuteDataFlow",
+				"dependsOn": [
+					{
+						"activity": "Create Update Log Entry",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataflow": {
+						"referenceName": "InsertMissingProductKeys",
+						"type": "DataFlowReference",
+						"parameters": {
+							"LastUpdatedDate": {
+								"value": "'@{formatDateTime(variables('LastUpdateDate'),'yyyy-MM-dd HH:mm:ss')}'",
+								"type": "Expression"
+							}
+						},
+						"datasetParameters": {
+							"StockAdjustmentStagingFull": {
+								"ConnectionStringKey": {
+									"value": "@pipeline().parameters.StagingDBConnectionStringKey",
+									"type": "Expression"
+								},
+								"KeyVault_URL": {
+									"value": "@pipeline().parameters.KeyVault_URL",
+									"type": "Expression"
+								}
+							},
+							"DimProduct": {
+								"ConnectionStringKey": {
+									"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+									"type": "Expression"
+								},
+								"KeyVault_URL": {
+									"value": "@pipeline().parameters.KeyVault_URL",
+									"type": "Expression"
+								}
+							},
+							"InsertDimProduct": {
+								"ConnectionStringKey": {
+									"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+									"type": "Expression"
+								},
+								"KeyVault_URL": {
+									"value": "@pipeline().parameters.KeyVault_URL",
+									"type": "Expression"
+								}
+							}
+						}
+					},
+					"compute": {
+						"coreCount": 8,
+						"computeType": "General"
+					},
+					"traceLevel": "Fine"
+				}
+			},
+			{
+				"name": "Regroup",
+				"type": "Wait",
+				"dependsOn": [
+					{
+						"activity": "InsertMissingProductKey",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"waitTimeInSeconds": 1
+				}
+			},
+			{
+				"name": "Set Return value",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "CheckEndOfMonth",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "EOMresult",
+					"value": {
+						"value": "@bool(activity('CheckEndOfMonth').output.firstRow.result)",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "CheckEndOfMonth",
+				"type": "Lookup",
+				"dependsOn": [
+					{
+						"activity": "StockAdjustmentUpdate",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					},
+					{
+						"activity": "StockledgerTransactionsUpdate",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					},
+					{
+						"activity": "InventoryLevelsUpdate",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": "DECLARE @returnval BIT \nEXEC dbo.checkEndOfMonth @returnval OUTPUT\nSELECT @returnval result",
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "FactInventoryLevels",
+						"type": "DatasetReference",
+						"parameters": {
+							"ConnectionStringKey": {
+								"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+								"type": "Expression"
+							},
+							"KeyVault_URL": {
+								"value": "@pipeline().parameters.KeyVault_URL",
+								"type": "Expression"
+							}
+						}
+					}
+				}
+			},
+			{
+				"name": "If EndOfMonth",
+				"type": "IfCondition",
+				"dependsOn": [
+					{
+						"activity": "Set Return value",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@variables('EOMresult')",
+						"type": "Expression"
+					},
+					"ifTrueActivities": [
+						{
+							"name": "CopyMonthlySnapshotData",
+							"type": "Copy",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "AzureSqlSource",
+									"sqlReaderQuery": "SELECT  [Product_Key]\r\n      ,[Inventory_Type_Key]\r\n      ,[Location_Key]\r\n      ,[SnapshotDate_Key]\r\n      ,[quantity]\r\n      ,[MMG_Key]\r\n      ,[Last_Updated]\r\n      ,[unit_cost]\r\n      ,[total_cost]\r\n      ,[unit_retail]\r\n      ,[total_retail]\r\n  FROM [dbo].[FactInventoryLevels]",
+									"queryTimeout": "02:00:00",
+									"partitionOption": "None"
+								},
+								"sink": {
+									"type": "AzureSqlSink",
+									"writeBehavior": "insert",
+									"sqlWriterUseTableLock": false
+								},
+								"enableStaging": false,
+								"translator": {
+									"type": "TabularTranslator",
+									"mappings": [
+										{
+											"source": {
+												"name": "Product_Key",
+												"type": "Int64",
+												"physicalType": "bigint"
+											},
+											"sink": {
+												"name": "Product_Key",
+												"type": "Int64",
+												"physicalType": "bigint"
+											}
+										},
+										{
+											"source": {
+												"name": "Inventory_Type_Key",
+												"type": "Int64",
+												"physicalType": "bigint"
+											},
+											"sink": {
+												"name": "Inventory_Type_Key",
+												"type": "Int64",
+												"physicalType": "bigint"
+											}
+										},
+										{
+											"source": {
+												"name": "Location_Key",
+												"type": "Int64",
+												"physicalType": "bigint"
+											},
+											"sink": {
+												"name": "Location_Key",
+												"type": "Int64",
+												"physicalType": "bigint"
+											}
+										},
+										{
+											"source": {
+												"name": "SnapshotDate_Key",
+												"type": "Int64",
+												"physicalType": "bigint"
+											},
+											"sink": {
+												"name": "SnapshotDate_Key",
+												"type": "Int64",
+												"physicalType": "bigint"
+											}
+										},
+										{
+											"source": {
+												"name": "quantity",
+												"type": "Double",
+												"physicalType": "float"
+											},
+											"sink": {
+												"name": "quantity",
+												"type": "Double",
+												"physicalType": "float"
+											}
+										},
+										{
+											"source": {
+												"name": "MMG_Key",
+												"type": "Int64",
+												"physicalType": "bigint"
+											},
+											"sink": {
+												"name": "MMG_Key",
+												"type": "Int64",
+												"physicalType": "bigint"
+											}
+										},
+										{
+											"source": {
+												"name": "Last_Updated",
+												"type": "DateTime",
+												"physicalType": "datetime"
+											},
+											"sink": {
+												"name": "Last_Updated",
+												"type": "DateTime",
+												"physicalType": "datetime"
+											}
+										},
+										{
+											"source": {
+												"name": "unit_cost",
+												"type": "Decimal",
+												"physicalType": "decimal",
+												"scale": 6,
+												"precision": 17
+											},
+											"sink": {
+												"name": "unit_cost",
+												"type": "Decimal",
+												"physicalType": "decimal",
+												"scale": 6,
+												"precision": 17
+											}
+										},
+										{
+											"source": {
+												"name": "total_cost",
+												"type": "Decimal",
+												"physicalType": "decimal",
+												"scale": 6,
+												"precision": 17
+											},
+											"sink": {
+												"name": "total_cost",
+												"type": "Decimal",
+												"physicalType": "decimal",
+												"scale": 6,
+												"precision": 17
+											}
+										},
+										{
+											"source": {
+												"name": "unit_retail",
+												"type": "Decimal",
+												"physicalType": "decimal",
+												"scale": 6,
+												"precision": 17
+											},
+											"sink": {
+												"name": "unit_retail",
+												"type": "Decimal",
+												"physicalType": "decimal",
+												"scale": 6,
+												"precision": 17
+											}
+										},
+										{
+											"source": {
+												"name": "total_retail",
+												"type": "Decimal",
+												"physicalType": "decimal",
+												"scale": 6,
+												"precision": 17
+											},
+											"sink": {
+												"name": "total_retail",
+												"type": "Decimal",
+												"physicalType": "decimal",
+												"scale": 6,
+												"precision": 17
+											}
+										}
+									],
+									"typeConversion": true,
+									"typeConversionSettings": {
+										"allowDataTruncation": true,
+										"treatBooleanAsNumber": false
+									}
+								}
+							},
+							"inputs": [
+								{
+									"referenceName": "FactInventoryLevels",
+									"type": "DatasetReference",
+									"parameters": {
+										"ConnectionStringKey": {
+											"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+											"type": "Expression"
+										},
+										"KeyVault_URL": {
+											"value": "@pipeline().parameters.KeyVault_URL",
+											"type": "Expression"
+										}
+									}
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "FactMonthlyInventorySnapshots",
+									"type": "DatasetReference",
+									"parameters": {
+										"ConnectionStringKey": {
+											"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+											"type": "Expression"
+										},
+										"KeyVault_URL": {
+											"value": "@pipeline().parameters.KeyVault_URL",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						}
+					]
+				}
+			}
+		],
+		"parameters": {
+			"StagingDBConnectionStringKey": {
+				"type": "string",
+				"defaultValue": "EnactorBI-StagingDB-ConnectionString"
+			},
+			"DataWarehouseDBConnectionStringKey": {
+				"type": "string",
+				"defaultValue": "EnactorBI-DataWarehouseDB-ConnectionString"
+			},
+			"KeyVault_URL": {
+				"type": "string",
+				"defaultValue": "https://PR-EVAL-BI-Key-Vault.vault.azure.net/"
+			}
+		},
+		"variables": {
+			"LastUpdateDate": {
+				"type": "String"
+			},
+			"ReturnValue": {
+				"type": "String"
+			},
+			"EOMresult": {
+				"type": "Boolean"
+			}
+		},
+		"folder": {
+			"name": "StagingToDW"
+		},
+		"annotations": [],
+		"lastPublishTime": "2022-10-03T13:48:26Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

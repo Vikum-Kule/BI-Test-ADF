@@ -1,0 +1,665 @@
+{
+	"name": "D2-Update_Sales_Fact_Tables",
+	"properties": {
+		"activities": [
+			{
+				"name": "Lookup Previous Staging Extract Date",
+				"description": "Get penultimate extract date from staging extract log",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": "select \nFORMAT(max(extractDateTime),'yyyy-MM-ddTHH:mm:ssZ') as LastSuccessfulExtractDate\nfrom extractlog\nwhere extractdatetime not in (\nselect max(extractDateTime) from extractlog\nwhere extracttype = 'ProductSalesFact'\nand extractresult = 'Success')\nand extracttype = 'ProductSalesFact'\nand extractresult = 'Success'\n\n",
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "Brand_Staging",
+						"type": "DatasetReference",
+						"parameters": {
+							"ConnectionStringKey": "@pipeline().parameters.StagingDBConnectionStringKey",
+							"KeyVault_URL": "@pipeline().parameters.KeyVault_URL"
+						}
+					}
+				}
+			},
+			{
+				"name": "Create Update Log Entry",
+				"type": "Lookup",
+				"dependsOn": [
+					{
+						"activity": "Set Last Update Date",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": {
+							"value": "@concat('insert UpdateLog \nvalues(getdate(),''',formatDateTime(activity('Lookup Previous Staging Extract Date').output.firstRow.LastSuccessfulExtractDate,'yyyy-MM-dd HH:mm:ss'),''',\n''ProductSalesFact'',\n''Started'',\ngetdate());\nselect SCOPE_IDENTITY() as logRecord')",
+							"type": "Expression"
+						},
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "DimLocation",
+						"type": "DatasetReference",
+						"parameters": {
+							"ConnectionStringKey": {
+								"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+								"type": "Expression"
+							},
+							"KeyVault_URL": {
+								"value": "@pipeline().parameters.KeyVault_URL",
+								"type": "Expression"
+							}
+						}
+					}
+				}
+			},
+			{
+				"name": "Set Last Update Date",
+				"description": "Get Last Update datetime and convert to UTC (for use by ProductSales Update flow)",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "Lookup Previous Staging Extract Date",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "LastUpdateDate",
+					"value": {
+						"value": "@{convertFromUtc(activity('Lookup Previous Staging Extract Date').output.firstRow.LastSuccessfulExtractDate,'GMT Standard Time')}",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "Complete Update Log Entry",
+				"description": "Set Extract Log Entry to Success",
+				"type": "Lookup",
+				"dependsOn": [
+					{
+						"activity": "ProductSalesUpdateFromView",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					},
+					{
+						"activity": "PromoSalesUpdateFromView",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": {
+							"value": "update updateLog \nset UpdateResult = 'Success',\nLastUpdatedDate = getdate()\nwhere logid = @{activity('Create Update Log Entry').output.firstRow.logRecord};\n\nselect 0 res",
+							"type": "Expression"
+						},
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "DimLocation",
+						"type": "DatasetReference",
+						"parameters": {
+							"ConnectionStringKey": {
+								"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+								"type": "Expression"
+							},
+							"KeyVault_URL": {
+								"value": "@pipeline().parameters.KeyVault_URL",
+								"type": "Expression"
+							}
+						}
+					}
+				}
+			},
+			{
+				"name": "ProductSalesUpdateFromView",
+				"type": "ExecuteDataFlow",
+				"dependsOn": [
+					{
+						"activity": "regroup",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "1.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataflow": {
+						"referenceName": "ProductSalesUpdateFromView",
+						"type": "DataFlowReference",
+						"parameters": {
+							"LastUpdatedDate": {
+								"value": "'@{formatDateTime(variables('LastUpdateDate'),'yyyy-MM-dd HH:mm:ss')}'",
+								"type": "Expression"
+							}
+						},
+						"datasetParameters": {
+							"ProductSalesStaging": {
+								"ConnectionStringKey": {
+									"value": "@pipeline().parameters.StagingDBConnectionStringKey",
+									"type": "Expression"
+								},
+								"KeyVault_URL": {
+									"value": "@pipeline().parameters.KeyVault_URL",
+									"type": "Expression"
+								}
+							},
+							"DimLocation": {
+								"ConnectionStringKey": {
+									"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+									"type": "Expression"
+								},
+								"KeyVault_URL": {
+									"value": "@pipeline().parameters.KeyVault_URL",
+									"type": "Expression"
+								}
+							},
+							"DimProduct": {
+								"ConnectionStringKey": {
+									"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+									"type": "Expression"
+								},
+								"KeyVault_URL": {
+									"value": "@pipeline().parameters.KeyVault_URL",
+									"type": "Expression"
+								}
+							},
+							"DimCustomer": {
+								"ConnectionStringKey": {
+									"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+									"type": "Expression"
+								},
+								"KeyVault_URL": {
+									"value": "@pipeline().parameters.KeyVault_URL",
+									"type": "Expression"
+								}
+							},
+							"DimPromotion": {
+								"ConnectionStringKey": {
+									"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+									"type": "Expression"
+								},
+								"KeyVault_URL": {
+									"value": "@pipeline().parameters.KeyVault_URL",
+									"type": "Expression"
+								}
+							},
+							"DimMMG": {
+								"ConnectionStringKey": {
+									"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+									"type": "Expression"
+								},
+								"KeyVault_URL": {
+									"value": "@pipeline().parameters.KeyVault_URL",
+									"type": "Expression"
+								}
+							},
+							"DimTender": {
+								"ConnectionStringKey": {
+									"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+									"type": "Expression"
+								},
+								"KeyVault_URL": {
+									"value": "@pipeline().parameters.KeyVault_URL",
+									"type": "Expression"
+								}
+							},
+							"DimDate": {
+								"ConnectionStringKey": {
+									"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+									"type": "Expression"
+								},
+								"KeyVault_URL": {
+									"value": "@pipeline().parameters.KeyVault_URL",
+									"type": "Expression"
+								}
+							},
+							"DimLoyaltySchemeTier": {
+								"ConnectionStringKey": {
+									"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+									"type": "Expression"
+								},
+								"KeyVault_URL": {
+									"value": "@pipeline().parameters.KeyVault_URL",
+									"type": "Expression"
+								}
+							},
+							"DimCurrency": {
+								"ConnectionStringKey": {
+									"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+									"type": "Expression"
+								},
+								"KeyVault_URL": {
+									"value": "@pipeline().parameters.KeyVault_URL",
+									"type": "Expression"
+								}
+							},
+							"DimUser": {
+								"ConnectionStringKey": {
+									"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+									"type": "Expression"
+								},
+								"KeyVault_URL": {
+									"value": "@pipeline().parameters.KeyVault_URL",
+									"type": "Expression"
+								}
+							},
+							"DimSalesperson": {
+								"ConnectionStringKey": {
+									"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+									"type": "Expression"
+								},
+								"KeyVault_URL": {
+									"value": "@pipeline().parameters.KeyVault_URL",
+									"type": "Expression"
+								}
+							},
+							"DimBrand": {
+								"ConnectionStringKey": {
+									"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+									"type": "Expression"
+								},
+								"KeyVault_URL": {
+									"value": "@pipeline().parameters.KeyVault_URL",
+									"type": "Expression"
+								}
+							},
+							"DimVoidReason": {
+								"ConnectionStringKey": {
+									"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+									"type": "Expression"
+								},
+								"KeyVault_URL": {
+									"value": "@pipeline().parameters.KeyVault_URL",
+									"type": "Expression"
+								}
+							},
+							"DimReturnReason": {
+								"ConnectionStringKey": {
+									"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+									"type": "Expression"
+								},
+								"KeyVault_URL": {
+									"value": "@pipeline().parameters.KeyVault_URL",
+									"type": "Expression"
+								}
+							},
+							"DimHour": {
+								"ConnectionStringKey": {
+									"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+									"type": "Expression"
+								},
+								"KeyVault_URL": {
+									"value": "@pipeline().parameters.KeyVault_URL",
+									"type": "Expression"
+								}
+							},
+							"DimSize": {
+								"ConnectionStringKey": {
+									"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+									"type": "Expression"
+								},
+								"KeyVault_URL": {
+									"value": "@pipeline().parameters.KeyVault_URL",
+									"type": "Expression"
+								}
+							},
+							"DimColour": {
+								"ConnectionStringKey": {
+									"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+									"type": "Expression"
+								},
+								"KeyVault_URL": {
+									"value": "@pipeline().parameters.KeyVault_URL",
+									"type": "Expression"
+								}
+							},
+							"DimProductStyle": {
+								"ConnectionStringKey": {
+									"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+									"type": "Expression"
+								},
+								"KeyVault_URL": {
+									"value": "@pipeline().parameters.KeyVault_URL",
+									"type": "Expression"
+								}
+							},
+							"DimPriceOverrideReason": {
+								"ConnectionStringKey": {
+									"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+									"type": "Expression"
+								},
+								"KeyVault_URL": {
+									"value": "@pipeline().parameters.KeyVault_URL",
+									"type": "Expression"
+								}
+							},
+							"DimDiscountReason": {
+								"ConnectionStringKey": {
+									"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+									"type": "Expression"
+								},
+								"KeyVault_URL": {
+									"value": "@pipeline().parameters.KeyVault_URL",
+									"type": "Expression"
+								}
+							},
+							"WriteToFactSalesTable": {
+								"ConnectionStringKey": {
+									"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+									"type": "Expression"
+								},
+								"KeyVault_URL": {
+									"value": "@pipeline().parameters.KeyVault_URL",
+									"type": "Expression"
+								}
+							}
+						}
+					},
+					"compute": {
+						"coreCount": 8,
+						"computeType": "General"
+					},
+					"traceLevel": "Fine"
+				}
+			},
+			{
+				"name": "InsertMissingLocationKeys",
+				"type": "ExecuteDataFlow",
+				"dependsOn": [
+					{
+						"activity": "Create Update Log Entry",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "1.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataflow": {
+						"referenceName": "InsertMissingLocationKeys",
+						"type": "DataFlowReference",
+						"parameters": {
+							"LastUpdatedDate": "'2000-01-01 00:00:00'"
+						},
+						"datasetParameters": {
+							"ItemInventoryLevelWithCostStaging": {
+								"ConnectionStringKey": {
+									"value": "@pipeline().parameters.StagingDBConnectionStringKey",
+									"type": "Expression"
+								},
+								"KeyVault_URL": {
+									"value": "@pipeline().parameters.KeyVault_URL",
+									"type": "Expression"
+								}
+							},
+							"DimLocation": {
+								"ConnectionStringKey": {
+									"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+									"type": "Expression"
+								},
+								"KeyVault_URL": {
+									"value": "@pipeline().parameters.KeyVault_URL",
+									"type": "Expression"
+								}
+							},
+							"InsertDimLocation": {
+								"ConnectionStringKey": {
+									"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+									"type": "Expression"
+								},
+								"KeyVault_URL": {
+									"value": "@pipeline().parameters.KeyVault_URL",
+									"type": "Expression"
+								}
+							}
+						}
+					},
+					"compute": {
+						"coreCount": 8,
+						"computeType": "General"
+					},
+					"traceLevel": "Fine"
+				}
+			},
+			{
+				"name": "regroup",
+				"type": "Wait",
+				"dependsOn": [
+					{
+						"activity": "InsertMissingLocationKeys",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					},
+					{
+						"activity": "InsertMissingPromoKeys",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"waitTimeInSeconds": 1
+				}
+			},
+			{
+				"name": "PromoSalesUpdateFromView",
+				"type": "ExecuteDataFlow",
+				"dependsOn": [
+					{
+						"activity": "regroup",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataflow": {
+						"referenceName": "PromoSalesUpdateFromView",
+						"type": "DataFlowReference",
+						"parameters": {
+							"LastUpdatedDate": {
+								"value": "'@{formatDateTime(variables('LastUpdateDate'),'yyyy-MM-dd HH:mm:ss')}'",
+								"type": "Expression"
+							}
+						},
+						"datasetParameters": {
+							"PromoSalesStagingView": {
+								"ConnectionStringKey": {
+									"value": "@pipeline().parameters.StagingDBConnectionStringKey",
+									"type": "Expression"
+								},
+								"KeyVault_URL": {
+									"value": "@pipeline().parameters.KeyVault_URL",
+									"type": "Expression"
+								}
+							},
+							"DimPromotion": {
+								"ConnectionStringKey": {
+									"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+									"type": "Expression"
+								},
+								"KeyVault_URL": {
+									"value": "@pipeline().parameters.KeyVault_URL",
+									"type": "Expression"
+								}
+							},
+							"WriteToFactPromoSalesTable": {
+								"ConnectionStringKey": {
+									"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+									"type": "Expression"
+								},
+								"KeyVault_URL": {
+									"value": "@pipeline().parameters.KeyVault_URL",
+									"type": "Expression"
+								}
+							}
+						}
+					},
+					"compute": {
+						"coreCount": 8,
+						"computeType": "General"
+					},
+					"traceLevel": "Fine"
+				}
+			},
+			{
+				"name": "InsertMissingPromoKeys",
+				"type": "ExecuteDataFlow",
+				"dependsOn": [
+					{
+						"activity": "Create Update Log Entry",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataflow": {
+						"referenceName": "InsertMissingPromoKeys",
+						"type": "DataFlowReference",
+						"parameters": {
+							"LastUpdatedDate": {
+								"value": "'@{formatDateTime(variables('LastUpdateDate'),'yyyy-MM-dd HH:mm:ss')}'",
+								"type": "Expression"
+							}
+						},
+						"datasetParameters": {
+							"PromoSalesStagingFull": {
+								"ConnectionStringKey": {
+									"value": "@pipeline().parameters.StagingDBConnectionStringKey",
+									"type": "Expression"
+								},
+								"KeyVault_URL": {
+									"value": "@pipeline().parameters.KeyVault_URL",
+									"type": "Expression"
+								}
+							},
+							"DimPromotion": {
+								"ConnectionStringKey": {
+									"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+									"type": "Expression"
+								},
+								"KeyVault_URL": {
+									"value": "@pipeline().parameters.KeyVault_URL",
+									"type": "Expression"
+								}
+							},
+							"InsertDimPromotion": {
+								"ConnectionStringKey": {
+									"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+									"type": "Expression"
+								},
+								"KeyVault_URL": {
+									"value": "@pipeline().parameters.KeyVault_URL",
+									"type": "Expression"
+								}
+							}
+						}
+					},
+					"compute": {
+						"coreCount": 8,
+						"computeType": "General"
+					},
+					"traceLevel": "Fine"
+				}
+			}
+		],
+		"parameters": {
+			"StagingDBConnectionStringKey": {
+				"type": "string",
+				"defaultValue": "EnactorBI-StagingDB-ConnectionString"
+			},
+			"DataWarehouseDBConnectionStringKey": {
+				"type": "string",
+				"defaultValue": "EnactorBI-DataWarehouseDB-ConnectionString"
+			},
+			"KeyVault_URL": {
+				"type": "string",
+				"defaultValue": "https://PR-EVAL-BI-Key-Vault.vault.azure.net/"
+			}
+		},
+		"variables": {
+			"LastUpdateDate": {
+				"type": "String"
+			}
+		},
+		"folder": {
+			"name": "StagingToDW"
+		},
+		"annotations": [],
+		"lastPublishTime": "2022-10-03T13:48:26Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

@@ -1,0 +1,298 @@
+{
+	"name": "ProductSalesUpdateFromView",
+	"properties": {
+		"folder": {
+			"name": "Fact Updates"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "ProductSales_Staging_Full",
+						"type": "DatasetReference"
+					},
+					"name": "ProductSalesStaging"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimLocation",
+						"type": "DatasetReference"
+					},
+					"name": "DimLocation"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimProduct",
+						"type": "DatasetReference"
+					},
+					"name": "DimProduct"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimCustomer",
+						"type": "DatasetReference"
+					},
+					"name": "DimCustomer"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimPromotion",
+						"type": "DatasetReference"
+					},
+					"name": "DimPromotion"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimMMG",
+						"type": "DatasetReference"
+					},
+					"name": "DimMMG"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimTender",
+						"type": "DatasetReference"
+					},
+					"name": "DimTender"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimDate",
+						"type": "DatasetReference"
+					},
+					"name": "DimDate"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimLoyaltySchemeTier",
+						"type": "DatasetReference"
+					},
+					"name": "DimLoyaltySchemeTier"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimCurrency",
+						"type": "DatasetReference"
+					},
+					"name": "DimCurrency"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimUser",
+						"type": "DatasetReference"
+					},
+					"name": "DimUser"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimUser",
+						"type": "DatasetReference"
+					},
+					"name": "DimSalesperson"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimBrand",
+						"type": "DatasetReference"
+					},
+					"name": "DimBrand"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimReason",
+						"type": "DatasetReference"
+					},
+					"name": "DimVoidReason"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimReason",
+						"type": "DatasetReference"
+					},
+					"name": "DimReturnReason"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimHour",
+						"type": "DatasetReference"
+					},
+					"name": "DimHour"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimSize",
+						"type": "DatasetReference"
+					},
+					"name": "DimSize"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimColour",
+						"type": "DatasetReference"
+					},
+					"name": "DimColour"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimProduct_Style",
+						"type": "DatasetReference"
+					},
+					"name": "DimProductStyle"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimReason",
+						"type": "DatasetReference"
+					},
+					"name": "DimPriceOverrideReason"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimReason",
+						"type": "DatasetReference"
+					},
+					"name": "DimDiscountReason"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "FactSales",
+						"type": "DatasetReference"
+					},
+					"name": "WriteToFactSalesTable"
+				}
+			],
+			"transformations": [
+				{
+					"name": "DataSinceLastUpdate"
+				},
+				{
+					"name": "LookupLocation"
+				},
+				{
+					"name": "LookupProduct"
+				},
+				{
+					"name": "LookupPromotion"
+				},
+				{
+					"name": "LookupMMG"
+				},
+				{
+					"name": "LookupTender"
+				},
+				{
+					"name": "LookupTradeDate"
+				},
+				{
+					"name": "LookupCurrency"
+				},
+				{
+					"name": "SelectColumns"
+				},
+				{
+					"name": "DimLocationCurrent"
+				},
+				{
+					"name": "DimCustomerCurrent"
+				},
+				{
+					"name": "DimPromotionCurrent"
+				},
+				{
+					"name": "DimMMGCurrent"
+				},
+				{
+					"name": "DimTenderCurrent"
+				},
+				{
+					"name": "DimDateCurrent"
+				},
+				{
+					"name": "DimLoyaltySchemeTierCurrent"
+				},
+				{
+					"name": "DimCurrencyCurrent"
+				},
+				{
+					"name": "DimProductCurrent"
+				},
+				{
+					"name": "DimUserCurrent"
+				},
+				{
+					"name": "LookupUser"
+				},
+				{
+					"name": "LookupSalesperson"
+				},
+				{
+					"name": "DimSalespersonCurrent"
+				},
+				{
+					"name": "DimBrandCurrent"
+				},
+				{
+					"name": "LookupBrand"
+				},
+				{
+					"name": "LookupCustomer"
+				},
+				{
+					"name": "LookupLoyaltySchemeTier"
+				},
+				{
+					"name": "DimVoidReasonCurrent"
+				},
+				{
+					"name": "DimReturnReasonCurrent"
+				},
+				{
+					"name": "LookupVoidReason"
+				},
+				{
+					"name": "LookupReturnReason"
+				},
+				{
+					"name": "LookupHour"
+				},
+				{
+					"name": "DimSizeCurrent"
+				},
+				{
+					"name": "lookupSize"
+				},
+				{
+					"name": "lookupColour"
+				},
+				{
+					"name": "DimColourCurrent"
+				},
+				{
+					"name": "DimProductStyleIsCurrent"
+				},
+				{
+					"name": "lookupStyle"
+				},
+				{
+					"name": "DimStyle"
+				},
+				{
+					"name": "LookupPriceOverrideReason"
+				},
+				{
+					"name": "DimPriceOverrideReasonCurrent"
+				},
+				{
+					"name": "LookupDiscountReason"
+				},
+				{
+					"name": "DimDiscountReasonCurrent"
+				}
+			],
+			"script": "parameters{\n\tLastUpdatedDate as string ('2000-01-01 00:00:00')\n}\nsource(output(\n\t\ttransaction_id as string,\n\t\ttransaction_number as long,\n\t\tterminal_number as long,\n\t\tdevice_id as string,\n\t\tlocation_id as string,\n\t\tapplication_id as string,\n\t\tbase_currency_id as string,\n\t\tcompleted_date_time as timestamp,\n\t\ttradedate as date,\n\t\ttrading_day as integer,\n\t\ttrading_year as integer,\n\t\tline_number as integer,\n\t\tproduct_id as string,\n\t\tMMGroupKey as string,\n\t\tBrandKey as string,\n\t\tSalesperson as string,\n\t\tUser_id as string,\n\t\ttax_rate_id as string,\n\t\tSalesValueLocal as decimal(17,6),\n\t\tOrderValueLocal as decimal(17,6),\n\t\tReturnsValueLocal as decimal(17,6),\n\t\tPromoValueLocal as decimal(17,6),\n\t\tVoidedValueLocal as decimal(17,6),\n\t\tManualDiscValueLocal as decimal(17,6),\n\t\ttax_value_local as decimal(17,6),\n\t\tPriceOverridesValueLocal as decimal(17,6),\n\t\tSalesValueHome as decimal(35,12),\n\t\tOrderValueHome as decimal(35,12),\n\t\tReturnsValueHome as decimal(35,12),\n\t\tPromoValueHome as decimal(35,12),\n\t\tVoidedValueHome as decimal(35,12),\n\t\tManualDiscValueHome as decimal(35,12),\n\t\tPriceOverridesValueHome as decimal(35,12),\n\t\ttax_value_home as decimal(35,12),\n\t\tTotalCostValueHome as decimal(17,6),\n\t\texchange_rate as decimal(17,6),\n\t\tSales_Quantity as double,\n\t\tOrders_Quantity as double,\n\t\tReturns_Quantity as double,\n\t\tVoided_Quantity as double,\n\t\titem_voided as boolean,\n\t\ttransaction_voided as boolean,\n\t\titem_returned as boolean,\n\t\tvoid_reason_code as string,\n\t\tis_promotion_item as boolean,\n\t\tcustomer_number as string,\n\t\tloyalty_account_id as string,\n\t\tloyalty_scheme_id as string,\n\t\ttier_id as string,\n\t\treturn_reason_code as string,\n\t\tmain_promotion_id as string,\n\t\tmain_promotion_regionKey as string,\n\t\tmain_reward_value as decimal(17,6),\n\t\tmain_distributed_reward_value as decimal(17,6),\n\t\tmain_promotion_quantity as double,\n\t\tmain_tender_id as string,\n\t\tmain_tender_regionKey as string,\n\t\tmain_tender_currency_id as string,\n\t\tmain_tender_base_value as decimal(17,6),\n\t\tmain_tender_value as decimal(17,6),\n\t\tcolour_id as string,\n\t\tsize_id as string,\n\t\tstyle as string,\n\t\tdiscount_reason_code as string,\n\t\tprice_override_reason_code as string,\n\t\toriginal_transaction_id as string,\n\t\tis_employee_transaction as integer,\n\t\tlast_updated as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> ProductSalesStaging\nsource(output(\n\t\tLocation_Key as long,\n\t\tlocation_id as string,\n\t\tDescription as string,\n\t\tTown as string,\n\t\tCountryCode as string,\n\t\tCountry as string,\n\t\tIsCurrent as boolean,\n\t\tDateCreated as timestamp,\n\t\tLocationSurrogateKey as long\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> DimLocation\nsource(output(\n\t\tProduct_Key as long,\n\t\tproduct_id as string,\n\t\tType as string,\n\t\tDescription as string,\n\t\tLong_description as string,\n\t\tImage_URL as string,\n\t\tIsCurrent as boolean,\n\t\tDateCreated as timestamp,\n\t\tColour_Key as long,\n\t\tSize_Key as long,\n\t\tMMG_Key as long\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> DimProduct\nsource(output(\n\t\tCustomer_Key as long,\n\t\tCustomer_Number as string,\n\t\tForename as string,\n\t\tSurname as string,\n\t\tIsCurrent as boolean,\n\t\tDateCreated as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> DimCustomer\nsource(output(\n\t\tPromotion_Key as long,\n\t\tEnactorPromotionKey as string,\n\t\tPromotion_id as string,\n\t\tRegionKey as string,\n\t\tDescription as string,\n\t\tStart_Date as timestamp,\n\t\tEnd_Date as timestamp,\n\t\tIsCurrent as boolean,\n\t\tDateCreated as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> DimPromotion\nsource(output(\n\t\tMMG_Key as long,\n\t\tGroupKey as string,\n\t\tGroup_Id as string,\n\t\tGroup_Hierarchy_Id as string,\n\t\tlevel as string,\n\t\tLevel_1_Group_Id as string,\n\t\tLevel_2_Group_Id as string,\n\t\tLevel_3_Group_Id as string,\n\t\tLevel_4_Group_Id as string,\n\t\tLevel_5_Group_Id as string,\n\t\tLevel_6_Group_Id as string,\n\t\tLevel_7_Group_Id as string,\n\t\tLevel_8_Group_Id as string,\n\t\tLevel_9_Group_Id as string,\n\t\tLevel_10_Group_Id as string,\n\t\tIsCurrent as boolean,\n\t\tDateCreated as timestamp,\n\t\tName as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> DimMMG\nsource(output(\n\t\tTender_Key as long,\n\t\ttender_id as string,\n\t\tTender_type as string,\n\t\tDescription as string,\n\t\tRegionKey as string,\n\t\tIsCurrent as boolean,\n\t\tDateCreated as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> DimTender\nsource(output(\n\t\tDate_Key as long,\n\t\tDate as date,\n\t\tDay_of_Week as integer,\n\t\tFiscal_Year as integer,\n\t\tMonth_In_Year as integer,\n\t\tWeek_In_Year as integer,\n\t\tPeriod as integer,\n\t\tMonth_In_Period as integer,\n\t\tQuarter as integer,\n\t\tIsCurrent as boolean,\n\t\tDateCreated as timestamp,\n\t\tCalendar_Year as integer,\n\t\tCalendar_Month as integer,\n\t\tCalendar_Week as integer\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> DimDate\nsource(output(\n\t\tLoyaltySchemeTier_Key as long,\n\t\tLoyaltySchemeTier as string,\n\t\tLoyaltyScheme_Id as string,\n\t\tLoyaltySchemeDescription as string,\n\t\tTier_Id as string,\n\t\tTierDescription as string,\n\t\tIsCurrent as boolean,\n\t\tDateCreated as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> DimLoyaltySchemeTier\nsource(output(\n\t\tCurrency_Key as long,\n\t\tCurrency_Id as string,\n\t\tDescription as string,\n\t\tExchRate as double,\n\t\tIsCurrent as boolean,\n\t\tDateCreated as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> DimCurrency\nsource(output(\n\t\tUser_Key as long,\n\t\tUser_Id as string,\n\t\tForename as string,\n\t\tSurname as string,\n\t\tFullname as string,\n\t\tIsCurrent as boolean,\n\t\tDateCreated as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> DimUser\nsource(output(\n\t\tUser_Key as long,\n\t\tUser_Id as string,\n\t\tForename as string,\n\t\tSurname as string,\n\t\tFullname as string,\n\t\tIsCurrent as boolean,\n\t\tDateCreated as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> DimSalesperson\nsource(output(\n\t\tBrand_Key as long,\n\t\tGroupKey as string,\n\t\tGroup_Id as string,\n\t\tGroup_Hierarchy_Id as string,\n\t\tlevel as string,\n\t\tLevel_1_Group_Id as string,\n\t\tLevel_2_Group_Id as string,\n\t\tLevel_3_Group_Id as string,\n\t\tLevel_4_Group_Id as string,\n\t\tLevel_5_Group_Id as string,\n\t\tLevel_6_Group_Id as string,\n\t\tLevel_7_Group_Id as string,\n\t\tLevel_8_Group_Id as string,\n\t\tLevel_9_Group_Id as string,\n\t\tLevel_10_Group_Id as string,\n\t\tIsCurrent as boolean,\n\t\tDateCreated as timestamp,\n\t\tName as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> DimBrand\nsource(output(\n\t\tReason_Key as long,\n\t\tEnactorReasonKey as string,\n\t\tReason_Id as string,\n\t\tRegionKey as string,\n\t\tReason_Type as string,\n\t\tDescription as string,\n\t\tIsCurrent as boolean,\n\t\tDateCreated as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> DimVoidReason\nsource(output(\n\t\tReason_Key as long,\n\t\tEnactorReasonKey as string,\n\t\tReason_Id as string,\n\t\tRegionKey as string,\n\t\tReason_Type as string,\n\t\tDescription as string,\n\t\tIsCurrent as boolean,\n\t\tDateCreated as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> DimReturnReason\nsource(output(\n\t\tHour_key as long,\n\t\tHour as integer,\n\t\tDescription as string,\n\t\tDate_created as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> DimHour\nsource(output(\n\t\tSize_Key as long,\n\t\tSize_Id as string,\n\t\tDescription as string,\n\t\tIsCurrent as boolean,\n\t\tDateCreated as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> DimSize\nsource(output(\n\t\tColour_Key as long,\n\t\tColour_Id as string,\n\t\tDescription as string,\n\t\tIsCurrent as boolean,\n\t\tDateCreated as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> DimColour\nsource(output(\n\t\tProduct_Key as long,\n\t\tproduct_id as string,\n\t\tType as string,\n\t\tDescription as string,\n\t\tLong_description as string,\n\t\tImage_URL as string,\n\t\tIsCurrent as boolean,\n\t\tDateCreated as timestamp,\n\t\tColour_Key as long,\n\t\tSize_Key as long,\n\t\tMMG_Key as long,\n\t\tStyle_Key as long\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> DimProductStyle\nsource(output(\n\t\tReason_Key as long,\n\t\tEnactorReasonKey as string,\n\t\tReason_Id as string,\n\t\tRegionKey as string,\n\t\tReason_Type as string,\n\t\tDescription as string,\n\t\tIsCurrent as boolean,\n\t\tDateCreated as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> DimPriceOverrideReason\nsource(output(\n\t\tReason_Key as long,\n\t\tEnactorReasonKey as string,\n\t\tReason_Id as string,\n\t\tRegionKey as string,\n\t\tReason_Type as string,\n\t\tDescription as string,\n\t\tIsCurrent as boolean,\n\t\tDateCreated as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> DimDiscountReason\nProductSalesStaging filter(last_updated > toTimestamp($LastUpdatedDate,'yyyy-MM-dd HH:mm:ss')) ~> DataSinceLastUpdate\nDataSinceLastUpdate, DimLocationCurrent lookup(ProductSalesStaging@location_id == DimLocation@location_id,\n\tmultiple: false,\n\tpickup: 'any',\n\tbroadcast: 'auto')~> LookupLocation\nLookupLocation, DimProductCurrent lookup(ProductSalesStaging@product_id == DimProduct@product_id,\n\tmultiple: false,\n\tpickup: 'any',\n\tbroadcast: 'auto')~> LookupProduct\nLookupProduct, DimPromotionCurrent lookup(main_promotion_id == Promotion_id\n\t&& main_promotion_regionKey == RegionKey,\n\tmultiple: false,\n\tpickup: 'any',\n\tbroadcast: 'auto')~> LookupPromotion\nLookupPromotion, DimMMGCurrent lookup(MMGroupKey == GroupKey,\n\tmultiple: false,\n\tpickup: 'any',\n\tbroadcast: 'auto')~> LookupMMG\nLookupMMG, DimTenderCurrent lookup(main_tender_id == tender_id\n\t&& main_tender_regionKey == DimTender@RegionKey,\n\tmultiple: false,\n\tpickup: 'any',\n\tbroadcast: 'auto')~> LookupTender\nLookupTender, DimDateCurrent lookup(tradedate == Date,\n\tmultiple: false,\n\tpickup: 'any',\n\tbroadcast: 'auto')~> LookupTradeDate\nLookupTradeDate, DimCurrencyCurrent lookup(base_currency_id == Currency_Id,\n\tmultiple: false,\n\tpickup: 'any',\n\tbroadcast: 'auto')~> LookupCurrency\nlookupStyle select(mapColumn(\n\t\ttransaction_id,\n\t\ttransaction_number,\n\t\tterminal_number,\n\t\tdevice_id,\n\t\tapplication_id,\n\t\tcompleted_date_time,\n\t\tline_number,\n\t\tSalesValueHome,\n\t\tOrdersValueHome = OrderValueHome,\n\t\tReturnsValueHome,\n\t\tPromoValueHome,\n\t\tVoidedValueHome,\n\t\tManualDiscValueHome,\n\t\tPriceOverridesValueHome,\n\t\tTotalCostValueHome,\n\t\ttax_value_home,\n\t\tSales_Quantity,\n\t\tOrders_Quantity,\n\t\tReturns_Quantity,\n\t\tVoided_Quantity,\n\t\titem_voided,\n\t\ttransaction_voided,\n\t\titem_returned,\n\t\tis_promotion_item,\n\t\tvoid_reason_code,\n\t\treturn_reason_code,\n\t\tmain_reward_value,\n\t\tmain_distributed_reward_value,\n\t\tmain_promotion_quantity,\n\t\tmain_tender_base_value,\n\t\tmain_tender_value,\n\t\tlast_updated,\n\t\tLocation_Key,\n\t\tProduct_Key,\n\t\tPromotion_Key,\n\t\tMMG_Key = DimMMG@MMG_Key,\n\t\tTender_Key,\n\t\tDate_Key,\n\t\tCurrency_Key,\n\t\tUser_Key = DimUser@User_Key,\n\t\tSalesperson_User_Key = DimSalesperson@User_Key,\n\t\tBrand_Key,\n\t\tCustomer_Key,\n\t\tLoyaltySchemeTier_Key,\n\t\tVoid_Reason_Key = DimVoidReason@Reason_Key,\n\t\tReturn_Reason_Key = DimReturnReason@Reason_Key,\n\t\tSalesValueLocal,\n\t\tReturnsValueLocal,\n\t\tPromoValueLocal,\n\t\tManualDiscValueLocal,\n\t\tVoidedValueLocal,\n\t\tPriceOverridesValueLocal,\n\t\tOrderValueLocal,\n\t\ttax_value_local,\n\t\tHour_key,\n\t\tColour_Key = DimColour@Colour_Key,\n\t\tSize_Key = DimSize@Size_Key,\n\t\tStyle_Key = DimStyle_Product_Key,\n\t\tprice_override_reason_key = DimPriceOverrideReason@Reason_Key,\n\t\tdiscount_reason_key = DimDiscountReason@Reason_Key,\n\t\tis_employee_transaction,\n\t\toriginal_transaction_id\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> SelectColumns\nDimLocation filter(IsCurrent==true()) ~> DimLocationCurrent\nDimCustomer filter(IsCurrent==true()) ~> DimCustomerCurrent\nDimPromotion filter(IsCurrent==true()) ~> DimPromotionCurrent\nDimMMG filter(IsCurrent==true()) ~> DimMMGCurrent\nDimTender filter(IsCurrent==true()) ~> DimTenderCurrent\nDimDate filter(IsCurrent==true()) ~> DimDateCurrent\nDimLoyaltySchemeTier filter(IsCurrent==true()) ~> DimLoyaltySchemeTierCurrent\nDimCurrency filter(IsCurrent==true()) ~> DimCurrencyCurrent\nDimProduct filter(IsCurrent==true()) ~> DimProductCurrent\nDimUser filter(IsCurrent==true()) ~> DimUserCurrent\nLookupCurrency, DimUserCurrent lookup(ProductSalesStaging@User_id == DimUser@User_Id,\n\tmultiple: false,\n\tpickup: 'any',\n\tbroadcast: 'auto')~> LookupUser\nLookupUser, DimSalespersonCurrent lookup(Salesperson == DimSalesperson@User_Id,\n\tmultiple: false,\n\tpickup: 'any',\n\tbroadcast: 'auto')~> LookupSalesperson\nDimSalesperson filter(IsCurrent==true()) ~> DimSalespersonCurrent\nDimBrand filter(IsCurrent==true()) ~> DimBrandCurrent\nLookupSalesperson, DimBrandCurrent lookup(BrandKey == DimBrand@GroupKey,\n\tmultiple: false,\n\tpickup: 'any',\n\tbroadcast: 'auto')~> LookupBrand\nLookupBrand, DimCustomer lookup(ProductSalesStaging@customer_number == DimCustomer@Customer_Number,\n\tmultiple: false,\n\tpickup: 'any',\n\tbroadcast: 'auto')~> LookupCustomer\nLookupCustomer, DimLoyaltySchemeTier lookup(loyalty_scheme_id == LoyaltyScheme_Id\n\t&& ProductSalesStaging@tier_id == DimLoyaltySchemeTier@Tier_Id,\n\tmultiple: false,\n\tpickup: 'any',\n\tbroadcast: 'auto')~> LookupLoyaltySchemeTier\nDimVoidReason filter(IsCurrent==true()) ~> DimVoidReasonCurrent\nDimReturnReason filter(IsCurrent==true()) ~> DimReturnReasonCurrent\nLookupLoyaltySchemeTier, DimVoidReasonCurrent lookup(void_reason_code == Reason_Id,\n\tmultiple: false,\n\tpickup: 'any',\n\tbroadcast: 'auto')~> LookupVoidReason\nLookupVoidReason, DimReturnReasonCurrent lookup(return_reason_code == DimReturnReason@Reason_Id,\n\tmultiple: false,\n\tpickup: 'any',\n\tbroadcast: 'auto')~> LookupReturnReason\nLookupDiscountReason, DimHour lookup(hour(completed_date_time) == Hour,\n\tmultiple: false,\n\tpickup: 'any',\n\tbroadcast: 'auto')~> LookupHour\nDimSize filter(IsCurrent==true()) ~> DimSizeCurrent\nLookupHour, DimSizeCurrent lookup(ProductSalesStaging@size_id == DimSize@Size_Id,\n\tmultiple: false,\n\tpickup: 'any',\n\tbroadcast: 'auto')~> lookupSize\nlookupSize, DimColourCurrent lookup(ProductSalesStaging@colour_id == DimColour@Colour_Id,\n\tmultiple: false,\n\tpickup: 'any',\n\tbroadcast: 'auto')~> lookupColour\nDimColour filter(IsCurrent==true()) ~> DimColourCurrent\nDimProductStyle filter(IsCurrent==true()) ~> DimProductStyleIsCurrent\nlookupColour, DimStyle lookup(style == DimStyle_product_id,\n\tmultiple: false,\n\tpickup: 'any',\n\tbroadcast: 'auto')~> lookupStyle\nDimProductStyleIsCurrent select(mapColumn(\n\t\tDimStyle_Product_Key = Product_Key,\n\t\tDimStyle_product_id = product_id,\n\t\tDimStyle_IsCurrent = IsCurrent\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> DimStyle\nLookupReturnReason, DimPriceOverrideReasonCurrent lookup(price_override_reason_code == DimPriceOverrideReason@Reason_Id,\n\tmultiple: false,\n\tpickup: 'any',\n\tbroadcast: 'auto')~> LookupPriceOverrideReason\nDimPriceOverrideReason filter(IsCurrent==true()) ~> DimPriceOverrideReasonCurrent\nLookupPriceOverrideReason, DimDiscountReasonCurrent lookup(discount_reason_code == DimDiscountReason@Reason_Id,\n\tmultiple: false,\n\tpickup: 'any',\n\tbroadcast: 'auto')~> LookupDiscountReason\nDimDiscountReason filter(IsCurrent==true()) ~> DimDiscountReasonCurrent\nSelectColumns sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tinput(\n\t\ttransaction_id as string,\n\t\tline_number as integer,\n\t\tCurrency_Key as long,\n\t\tLocation_Key as long,\n\t\tterminal_number as long,\n\t\tCompleted_DateTime as timestamp,\n\t\tTrade_Date_Key as long,\n\t\tTender_Key as long,\n\t\tProduct_Key as long,\n\t\tMMG_Key as long,\n\t\tBrand_Key as long,\n\t\tSalesperson_Key as long,\n\t\tUser_Key as long,\n\t\tpromotion_Key as long,\n\t\tcustomer_Key as long,\n\t\tLoyaltySchemeTier_Key as long,\n\t\tSalesValueLocal as decimal(17,6),\n\t\tOrdersValueLocal as decimal(17,6),\n\t\tReturnsValueLocal as decimal(17,6),\n\t\tVoidedValueLocal as decimal(17,6),\n\t\tPromoValueLocal as decimal(17,6),\n\t\tManualDiscValueLocal as decimal(17,6),\n\t\tPriceOverridesValueLocal as decimal(17,6),\n\t\ttax_value_local as decimal(17,6),\n\t\tSalesValueHome as decimal(17,6),\n\t\tOrdersValueHome as decimal(17,6),\n\t\tReturnsValueHome as decimal(17,6),\n\t\tVoidedValueHome as decimal(17,6),\n\t\tPromoValueHome as decimal(17,6),\n\t\tManualDiscValueHome as decimal(17,6),\n\t\tPriceOverridesValueHome as decimal(17,6),\n\t\ttax_value_home as decimal(17,6),\n\t\tSales_Quantity as double,\n\t\tOrders_Quantity as double,\n\t\tReturns_Quantity as double,\n\t\tItem_Voided as boolean,\n\t\tTransaction_Voided as boolean,\n\t\tItem_Returned as boolean,\n\t\tVoid_Reason_Code_Key as long,\n\t\tReturn_Reason_Code_Key as long,\n\t\tCostValueHome as decimal(17,6),\n\t\tis_promotion_item as boolean,\n\t\tHour_Key as long,\n\t\tColour_Key as long,\n\t\tSize_Key as long,\n\t\tStyle_Key as long,\n\t\tprice_override_reason_code_key as long,\n\t\tdiscount_reason_code_key as long,\n\t\tis_employee_transaction as integer,\n\t\tDateCreated as timestamp,\n\t\toriginal_transaction_id as string\n\t),\n\tdeletable:false,\n\tinsertable:true,\n\tupdateable:false,\n\tupsertable:false,\n\tformat: 'table',\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\terrorHandlingOption: 'stopOnFirstError',\n\tmapColumn(\n\t\ttransaction_id,\n\t\tline_number,\n\t\tCurrency_Key,\n\t\tLocation_Key,\n\t\tterminal_number,\n\t\tCompleted_DateTime = completed_date_time,\n\t\tTrade_Date_Key = Date_Key,\n\t\tTender_Key,\n\t\tProduct_Key,\n\t\tMMG_Key,\n\t\tBrand_Key,\n\t\tSalesperson_Key = Salesperson_User_Key,\n\t\tUser_Key,\n\t\tpromotion_Key = Promotion_Key,\n\t\tcustomer_Key = Customer_Key,\n\t\tLoyaltySchemeTier_Key,\n\t\tSalesValueLocal,\n\t\tOrdersValueLocal = OrderValueLocal,\n\t\tReturnsValueLocal,\n\t\tVoidedValueLocal,\n\t\tPromoValueLocal,\n\t\tManualDiscValueLocal,\n\t\tPriceOverridesValueLocal,\n\t\ttax_value_local,\n\t\tSalesValueHome,\n\t\tOrdersValueHome,\n\t\tReturnsValueHome,\n\t\tVoidedValueHome,\n\t\tPromoValueHome,\n\t\tManualDiscValueHome,\n\t\tPriceOverridesValueHome,\n\t\tCostValueHome = TotalCostValueHome,\n\t\ttax_value_home,\n\t\tSales_Quantity,\n\t\tOrders_Quantity,\n\t\tReturns_Quantity,\n\t\tItem_Voided = item_voided,\n\t\tTransaction_Voided = transaction_voided,\n\t\tItem_Returned = item_returned,\n\t\tis_promotion_item,\n\t\tVoid_Reason_Code_Key = Void_Reason_Key,\n\t\tReturn_Reason_Code_Key = Return_Reason_Key,\n\t\tHour_Key = Hour_key,\n\t\tColour_Key,\n\t\tSize_Key,\n\t\tStyle_Key,\n\t\tprice_override_reason_code_key = price_override_reason_key,\n\t\tdiscount_reason_code_key = discount_reason_key,\n\t\tis_employee_transaction,\n\t\toriginal_transaction_id\n\t)) ~> WriteToFactSalesTable"
+		}
+	}
+}

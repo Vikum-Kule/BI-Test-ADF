@@ -1,0 +1,2159 @@
+{
+	"name": "S1-Copy_Dimension_Data_To_Staging",
+	"properties": {
+		"activities": [
+			{
+				"name": "Lookup Last Extract Date",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": "select FORMAT(max(ExtractDateTime),'yyyy-MM-ddTHH:mm:ssZ') as LastSuccessfulExtractDate\nfrom ExtractLog \nwhere ExtractResult = 'Success'\nand ExtractType = 'SalesDimension1'\n",
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "Customer_Staging",
+						"type": "DatasetReference",
+						"parameters": {
+							"ConnectionStringKey": {
+								"value": "@pipeline().parameters.StagingDBConnectionStringKey",
+								"type": "Expression"
+							},
+							"KeyVault_URL": {
+								"value": "@pipeline().parameters.KeyVault_URL",
+								"type": "Expression"
+							}
+						}
+					}
+				}
+			},
+			{
+				"name": "Create Extract Log Entry",
+				"type": "Lookup",
+				"dependsOn": [
+					{
+						"activity": "Set Last Extract Date",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": "insert ExtractLog \nvalues(getdate(),'SalesDimension1','Started',getdate());\nselect SCOPE_IDENTITY() as logRecord\n",
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "Customer_Staging",
+						"type": "DatasetReference",
+						"parameters": {
+							"ConnectionStringKey": {
+								"value": "@pipeline().parameters.StagingDBConnectionStringKey",
+								"type": "Expression"
+							},
+							"KeyVault_URL": {
+								"value": "@pipeline().parameters.KeyVault_URL",
+								"type": "Expression"
+							}
+						}
+					}
+				}
+			},
+			{
+				"name": "Update Extract Log Entry",
+				"description": "Set Extract Log Entry to Success",
+				"type": "Lookup",
+				"dependsOn": [
+					{
+						"activity": "Update ExtractLog with Latest UpdateDate",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": {
+							"value": "update ExtractLog \nset ExtractResult = 'Success',\nLastUpdatedDate = getdate()\nwhere logid = @{activity('Create Extract Log Entry').output.firstRow.logRecord};\n\nselect 0 res",
+							"type": "Expression"
+						},
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "Customer_Staging",
+						"type": "DatasetReference",
+						"parameters": {
+							"ConnectionStringKey": {
+								"value": "@pipeline().parameters.StagingDBConnectionStringKey",
+								"type": "Expression"
+							},
+							"KeyVault_URL": {
+								"value": "@pipeline().parameters.KeyVault_URL",
+								"type": "Expression"
+							}
+						}
+					}
+				}
+			},
+			{
+				"name": "Set Last Extract Date",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "Lookup Last Extract Date",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "LastExtractDate",
+					"value": {
+						"value": "@{convertFromUtc(activity('Lookup Last Extract Date').output.firstRow.LastSuccessfulExtractDate,'GMT Standard Time')}",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "CheckForNewSupplierProductData",
+				"type": "Lookup",
+				"dependsOn": [
+					{
+						"activity": "Create Extract Log Entry",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "MySqlSource",
+						"query": {
+							"value": "select count(1) as ct \nfrom supplierproducts\nwhere last_updated > '@{formatDateTime(variables('LastExtractDate'),'yyyy-MM-dd HH:mm:ss')}'",
+							"type": "Expression"
+						}
+					},
+					"dataset": {
+						"referenceName": "OperationalDB",
+						"type": "DatasetReference",
+						"parameters": {
+							"ConnectionStringKey": {
+								"value": "@pipeline().parameters.OperationalDBConnectionStringKey",
+								"type": "Expression"
+							},
+							"KeyVault_URL": {
+								"value": "@pipeline().parameters.KeyVault_URL",
+								"type": "Expression"
+							}
+						}
+					}
+				}
+			},
+			{
+				"name": "If New SupplierProduct Data",
+				"type": "IfCondition",
+				"dependsOn": [
+					{
+						"activity": "CheckForNewSupplierProductData",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@greater(activity('CheckForNewSupplierProductData').output.firstRow.ct,0)",
+						"type": "Expression"
+					},
+					"ifTrueActivities": [
+						{
+							"name": "Copy SupplierProduct Data",
+							"type": "Copy",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "MySqlSource",
+									"query": {
+										"value": "select Supplier_Id,\nProduct_Id,\nSupplier_Product_Id,\nDescription,\nLast_Updated\nfrom supplierproducts \nwhere (last_updated > '@{formatDateTime(variables('LastExtractDate'),'yyyy-MM-dd HH:mm:ss')}');",
+										"type": "Expression"
+									}
+								},
+								"sink": {
+									"type": "AzureSqlSink",
+									"writeBehavior": "upsert",
+									"upsertSettings": {
+										"useTempDB": true,
+										"keys": [
+											"supplier_id",
+											"product_id",
+											"supplier_product_id"
+										]
+									},
+									"sqlWriterUseTableLock": false,
+									"disableMetricsCollection": false
+								},
+								"enableStaging": false,
+								"translator": {
+									"type": "TabularTranslator",
+									"mappings": [
+										{
+											"source": {
+												"name": "Supplier_Id",
+												"type": "String"
+											},
+											"sink": {
+												"name": "supplier_id",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "Product_Id",
+												"type": "String"
+											},
+											"sink": {
+												"name": "product_id",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "Supplier_Product_Id",
+												"type": "String"
+											},
+											"sink": {
+												"name": "supplier_product_id",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "Description",
+												"type": "String"
+											},
+											"sink": {
+												"name": "description",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "Last_Updated",
+												"type": "DateTime"
+											},
+											"sink": {
+												"name": "last_updated",
+												"type": "DateTime",
+												"physicalType": "datetime"
+											}
+										}
+									],
+									"typeConversion": true,
+									"typeConversionSettings": {
+										"allowDataTruncation": true,
+										"treatBooleanAsNumber": false
+									}
+								}
+							},
+							"inputs": [
+								{
+									"referenceName": "OperationalDB",
+									"type": "DatasetReference",
+									"parameters": {
+										"ConnectionStringKey": {
+											"value": "@pipeline().parameters.OperationalDBConnectionStringKey",
+											"type": "Expression"
+										},
+										"KeyVault_URL": {
+											"value": "@pipeline().parameters.KeyVault_URL",
+											"type": "Expression"
+										}
+									}
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "SupplierProduct_Staging",
+									"type": "DatasetReference",
+									"parameters": {
+										"KeyVault_URL": {
+											"value": "@pipeline().parameters.KeyVault_URL",
+											"type": "Expression"
+										},
+										"ConnectionStringKey": {
+											"value": "@pipeline().parameters.StagingDBConnectionStringKey",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						}
+					]
+				}
+			},
+			{
+				"name": "CheckForNewCustomerData",
+				"type": "Lookup",
+				"dependsOn": [
+					{
+						"activity": "Create Extract Log Entry",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "MySqlSource",
+						"query": {
+							"value": "select count(1) as ct from customers\nwhere last_updated > '@{formatDateTime(variables('LastExtractDate'),'yyyy-MM-dd HH:mm:ss')}'",
+							"type": "Expression"
+						}
+					},
+					"dataset": {
+						"referenceName": "OperationalDB",
+						"type": "DatasetReference",
+						"parameters": {
+							"ConnectionStringKey": {
+								"value": "@pipeline().parameters.OperationalDBConnectionStringKey",
+								"type": "Expression"
+							},
+							"KeyVault_URL": {
+								"value": "@pipeline().parameters.KeyVault_URL",
+								"type": "Expression"
+							}
+						}
+					}
+				}
+			},
+			{
+				"name": "If New Customer Data",
+				"type": "IfCondition",
+				"dependsOn": [
+					{
+						"activity": "CheckForNewCustomerData",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@greater(activity('CheckForNewCustomerData').output.firstRow.ct,0)",
+						"type": "Expression"
+					},
+					"ifTrueActivities": [
+						{
+							"name": "Copy Customer Data",
+							"type": "Copy",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "MySqlSource",
+									"query": {
+										"value": "SELECT \nupper(c.Customer_Number) as Customer_Number,\nForename,\nSurname,\ncase \n    when right(loyalty_scheme_id,2) = 'UK' then 'GB' \n    else ifnull(right(loyalty_scheme_id,2),'GB') \nend as CountryCode,\nupper(Loyalty_Scheme_id) as Loyalty_Scheme_id,\nconcat('Loyalty (',right(loyalty_scheme_id,2),')') Loyalty_scheme_description, \nupper(tier_code) as tier_code,\ncase \n  when Tier_code =  1 then 'Bronze' \n  when Tier_code = 2 then 'Silver'\n  when tier_code= 3 then 'Gold'\n  else '-' \nend as Tier_description,\nc.last_updated\nfrom customers c\nleft join\n customerloyaltyaccounts cla\n on c.customer_number = cla.customer_number\nwhere c.last_updated > '@{formatDateTime(variables('LastExtractDate'),'yyyy-MM-dd HH:mm:ss')}'\n or cla.last_updated > '@{formatDateTime(variables('LastExtractDate'),'yyyy-MM-dd HH:mm:ss')}'",
+										"type": "Expression"
+									}
+								},
+								"sink": {
+									"type": "AzureSqlSink",
+									"writeBehavior": "upsert",
+									"upsertSettings": {
+										"useTempDB": true,
+										"keys": [
+											"Customer_Number"
+										]
+									},
+									"sqlWriterUseTableLock": false,
+									"disableMetricsCollection": false
+								},
+								"enableStaging": false,
+								"translator": {
+									"type": "TabularTranslator",
+									"mappings": [
+										{
+											"source": {
+												"name": "CountryCode",
+												"type": "String"
+											},
+											"sink": {
+												"name": "CountryCode",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "Customer_Number",
+												"type": "String"
+											},
+											"sink": {
+												"name": "Customer_Number",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "Forename",
+												"type": "String"
+											},
+											"sink": {
+												"name": "Forename",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "Surname",
+												"type": "String"
+											},
+											"sink": {
+												"name": "Surname",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "Loyalty_Scheme_id",
+												"type": "String"
+											},
+											"sink": {
+												"name": "Loyalty_Scheme_id",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "Loyalty_scheme_description",
+												"type": "String"
+											},
+											"sink": {
+												"name": "Loyalty_scheme_description",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "tier_code",
+												"type": "String"
+											},
+											"sink": {
+												"name": "tier_code",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "Tier_description",
+												"type": "String"
+											},
+											"sink": {
+												"name": "Tier_description",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "last_updated",
+												"type": "DateTime"
+											},
+											"sink": {
+												"name": "last_updated",
+												"type": "DateTime",
+												"physicalType": "datetime"
+											}
+										}
+									],
+									"typeConversion": true,
+									"typeConversionSettings": {
+										"allowDataTruncation": true,
+										"treatBooleanAsNumber": false
+									}
+								}
+							},
+							"inputs": [
+								{
+									"referenceName": "OperationalDB",
+									"type": "DatasetReference",
+									"parameters": {
+										"ConnectionStringKey": {
+											"value": "@pipeline().parameters.OperationalDBConnectionStringKey",
+											"type": "Expression"
+										},
+										"KeyVault_URL": {
+											"value": "@pipeline().parameters.KeyVault_URL",
+											"type": "Expression"
+										}
+									}
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "Customer_Staging",
+									"type": "DatasetReference",
+									"parameters": {
+										"ConnectionStringKey": {
+											"value": "@pipeline().parameters.StagingDBConnectionStringKey",
+											"type": "Expression"
+										},
+										"KeyVault_URL": {
+											"value": "@pipeline().parameters.KeyVault_URL",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						}
+					]
+				}
+			},
+			{
+				"name": "CheckForNewMMGData",
+				"type": "Lookup",
+				"dependsOn": [
+					{
+						"activity": "Create Extract Log Entry",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "MySqlSource",
+						"query": {
+							"value": "select count(1) as ct from groups\nwhere group_type_id = 'mmGroup'\nand last_updated > '@{formatDateTime(variables('LastExtractDate'),'yyyy-MM-dd HH:mm:ss')}'",
+							"type": "Expression"
+						}
+					},
+					"dataset": {
+						"referenceName": "OperationalDB",
+						"type": "DatasetReference",
+						"parameters": {
+							"ConnectionStringKey": {
+								"value": "@pipeline().parameters.OperationalDBConnectionStringKey",
+								"type": "Expression"
+							},
+							"KeyVault_URL": {
+								"value": "@pipeline().parameters.KeyVault_URL",
+								"type": "Expression"
+							}
+						}
+					}
+				}
+			},
+			{
+				"name": "If New MMG Data",
+				"type": "IfCondition",
+				"dependsOn": [
+					{
+						"activity": "CheckForNewMMGData",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@greater(activity('CheckForNewMMGData').output.firstRow.ct,0)",
+						"type": "Expression"
+					},
+					"ifTrueActivities": [
+						{
+							"name": "Copy MMG Data",
+							"type": "Copy",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "MySqlSource",
+									"query": {
+										"value": "select\nUpper(Concat(Group_Hierarchy_Id,'/',Group_Id)) as GroupKey,\nUpper(Group_Id) as Group_Id,\nupper(Group_Hierarchy_Id) as Group_Hierarchy_Id,\nName,\nlevel,\nupper(Level_1_Group_Id) as Level_1_Group_Id,\nupper(Level_2_Group_Id) as Level_2_Group_Id,\nupper(Level_3_Group_Id) as Level_3_Group_Id,\nupper(Level_4_Group_Id) as Level_4_Group_Id,\nupper(Level_5_Group_Id) as Level_5_Group_Id,\nupper(Level_6_Group_Id) as Level_6_Group_Id,\nupper(Level_7_Group_Id) as Level_7_Group_Id,\nupper(Level_8_Group_Id) as Level_8_Group_Id,\nupper(Level_9_Group_Id) as Level_9_Group_Id,\nupper(Level_10_Group_Id) as Level_10_Group_Id,\nlast_updated\n\nfrom groups\nwhere group_type_id = 'mmGroup'\nand last_updated > '@{formatDateTime(variables('LastExtractDate'),'yyyy-MM-dd HH:mm:ss')}'",
+										"type": "Expression"
+									}
+								},
+								"sink": {
+									"type": "AzureSqlSink",
+									"writeBehavior": "upsert",
+									"upsertSettings": {
+										"useTempDB": true,
+										"keys": [
+											"GroupKey"
+										]
+									},
+									"sqlWriterUseTableLock": false,
+									"disableMetricsCollection": false
+								},
+								"enableStaging": false,
+								"translator": {
+									"type": "TabularTranslator",
+									"mappings": [
+										{
+											"source": {
+												"name": "GroupKey",
+												"type": "String"
+											},
+											"sink": {
+												"name": "GroupKey",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "Group_Id",
+												"type": "String"
+											},
+											"sink": {
+												"name": "Group_Id",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "Group_Hierarchy_Id",
+												"type": "String"
+											},
+											"sink": {
+												"name": "Group_Hierarchy_Id",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "Name",
+												"type": "String"
+											},
+											"sink": {
+												"name": "Name",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "level",
+												"type": "Int32"
+											},
+											"sink": {
+												"name": "level",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "Level_1_Group_Id",
+												"type": "String"
+											},
+											"sink": {
+												"name": "Level_1_Group_Id",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "Level_2_Group_Id",
+												"type": "String"
+											},
+											"sink": {
+												"name": "Level_2_Group_Id",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "Level_3_Group_Id",
+												"type": "String"
+											},
+											"sink": {
+												"name": "Level_3_Group_Id",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "Level_4_Group_Id",
+												"type": "String"
+											},
+											"sink": {
+												"name": "Level_4_Group_Id",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "Level_5_Group_Id",
+												"type": "String"
+											},
+											"sink": {
+												"name": "Level_5_Group_Id",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "Level_6_Group_Id",
+												"type": "String"
+											},
+											"sink": {
+												"name": "Level_6_Group_Id",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "Level_7_Group_Id",
+												"type": "String"
+											},
+											"sink": {
+												"name": "Level_7_Group_Id",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "Level_8_Group_Id",
+												"type": "String"
+											},
+											"sink": {
+												"name": "Level_8_Group_Id",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "Level_9_Group_Id",
+												"type": "String"
+											},
+											"sink": {
+												"name": "Level_9_Group_Id",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "Level_10_Group_Id",
+												"type": "String"
+											},
+											"sink": {
+												"name": "Level_10_Group_Id",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "last_updated",
+												"type": "DateTime"
+											},
+											"sink": {
+												"name": "last_updated",
+												"type": "DateTime",
+												"physicalType": "datetime"
+											}
+										}
+									],
+									"typeConversion": true,
+									"typeConversionSettings": {
+										"allowDataTruncation": true,
+										"treatBooleanAsNumber": false
+									}
+								}
+							},
+							"inputs": [
+								{
+									"referenceName": "OperationalDB",
+									"type": "DatasetReference",
+									"parameters": {
+										"ConnectionStringKey": {
+											"value": "@pipeline().parameters.OperationalDBConnectionStringKey",
+											"type": "Expression"
+										},
+										"KeyVault_URL": {
+											"value": "@pipeline().parameters.KeyVault_URL",
+											"type": "Expression"
+										}
+									}
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "MMG_Staging",
+									"type": "DatasetReference",
+									"parameters": {
+										"ConnectionStringKey": {
+											"value": "@pipeline().parameters.StagingDBConnectionStringKey",
+											"type": "Expression"
+										},
+										"KeyVault_URL": "@pipeline().parameters.KeyVault_URL"
+									}
+								}
+							]
+						}
+					]
+				}
+			},
+			{
+				"name": "CheckForNewTenderData",
+				"type": "Lookup",
+				"dependsOn": [
+					{
+						"activity": "Create Extract Log Entry",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "MySqlSource",
+						"query": {
+							"value": "select count(1) as ct from tenders\nwhere last_updated > '@{formatDateTime(variables('LastExtractDate'),'yyyy-MM-dd HH:mm:ss')}'",
+							"type": "Expression"
+						}
+					},
+					"dataset": {
+						"referenceName": "OperationalDB",
+						"type": "DatasetReference",
+						"parameters": {
+							"ConnectionStringKey": {
+								"value": "@pipeline().parameters.OperationalDBConnectionStringKey",
+								"type": "Expression"
+							},
+							"KeyVault_URL": {
+								"value": "@pipeline().parameters.KeyVault_URL",
+								"type": "Expression"
+							}
+						}
+					}
+				}
+			},
+			{
+				"name": "If New Tender Data",
+				"type": "IfCondition",
+				"dependsOn": [
+					{
+						"activity": "CheckForNewTenderData",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@greater(activity('CheckForNewTenderData').output.firstRow.ct,0)",
+						"type": "Expression"
+					},
+					"ifTrueActivities": [
+						{
+							"name": "Copy Tender Data",
+							"type": "Copy",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "MySqlSource",
+									"query": {
+										"value": "select \nupper(tender_id) as tender_id,\nTender_type,\nDescription,\nupper(concat(Group_Hierarchy_Id,'/',Group_id)) as RegionKey,\nlast_updated\n from tenders\n  where concat(Group_Hierarchy_Id,'/',Group_id) <> 'All/All'\n  and last_updated > '@{formatDateTime(variables('LastExtractDate'),'yyyy-MM-dd HH:mm:ss')}'",
+										"type": "Expression"
+									}
+								},
+								"sink": {
+									"type": "AzureSqlSink",
+									"writeBehavior": "upsert",
+									"upsertSettings": {
+										"useTempDB": true,
+										"keys": [
+											"tender_id"
+										]
+									},
+									"sqlWriterUseTableLock": false,
+									"disableMetricsCollection": false
+								},
+								"enableStaging": false,
+								"translator": {
+									"type": "TabularTranslator",
+									"mappings": [
+										{
+											"source": {
+												"name": "tender_id",
+												"type": "String"
+											},
+											"sink": {
+												"name": "tender_id",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "Tender_type",
+												"type": "String"
+											},
+											"sink": {
+												"name": "Tender_type",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "Description",
+												"type": "String"
+											},
+											"sink": {
+												"name": "Description",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "RegionKey",
+												"type": "String"
+											},
+											"sink": {
+												"name": "RegionKey",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "last_updated",
+												"type": "DateTime"
+											},
+											"sink": {
+												"name": "last_updated",
+												"type": "DateTime",
+												"physicalType": "datetime"
+											}
+										}
+									],
+									"typeConversion": true,
+									"typeConversionSettings": {
+										"allowDataTruncation": true,
+										"treatBooleanAsNumber": false
+									}
+								}
+							},
+							"inputs": [
+								{
+									"referenceName": "OperationalDB",
+									"type": "DatasetReference",
+									"parameters": {
+										"ConnectionStringKey": {
+											"value": "@pipeline().parameters.OperationalDBConnectionStringKey",
+											"type": "Expression"
+										},
+										"KeyVault_URL": {
+											"value": "@pipeline().parameters.KeyVault_URL",
+											"type": "Expression"
+										}
+									}
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "Tender_Staging",
+									"type": "DatasetReference",
+									"parameters": {
+										"ConnectionStringKey": {
+											"value": "@pipeline().parameters.StagingDBConnectionStringKey",
+											"type": "Expression"
+										},
+										"KeyVault_URL": "@pipeline().parameters.KeyVault_URL"
+									}
+								}
+							]
+						}
+					]
+				}
+			},
+			{
+				"name": "CheckForNewPromotionData",
+				"type": "Lookup",
+				"dependsOn": [
+					{
+						"activity": "Create Extract Log Entry",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "MySqlSource",
+						"query": {
+							"value": "select count(1) as ct from promotions\nwhere last_updated > '@{formatDateTime(variables('LastExtractDate'),'yyyy-MM-dd HH:mm:ss')}'",
+							"type": "Expression"
+						}
+					},
+					"dataset": {
+						"referenceName": "OperationalDB",
+						"type": "DatasetReference",
+						"parameters": {
+							"ConnectionStringKey": {
+								"value": "@pipeline().parameters.OperationalDBConnectionStringKey",
+								"type": "Expression"
+							},
+							"KeyVault_URL": {
+								"value": "@pipeline().parameters.KeyVault_URL",
+								"type": "Expression"
+							}
+						}
+					}
+				}
+			},
+			{
+				"name": "If New Promotion Data",
+				"type": "IfCondition",
+				"dependsOn": [
+					{
+						"activity": "CheckForNewPromotionData",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@greater(activity('CheckForNewPromotionData').output.firstRow.ct,0)",
+						"type": "Expression"
+					},
+					"ifTrueActivities": [
+						{
+							"name": "Copy Promotion Data",
+							"type": "Copy",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "MySqlSource",
+									"query": {
+										"value": "select\nupper(Promotion_id) as Promotion_id,\nupper(concat(Group_hierarchy_id,'/',group_id,'/',Promotion_id)) as PromoKey,\nupper(concat(Group_hierarchy_id,'/',group_id)) as RegionKey,\nDescription,\nStart_Date,\nEnd_Date,\nlast_updated\n\nfrom promotions\nwhere last_updated > '@{formatDateTime(variables('LastExtractDate'),'yyyy-MM-dd HH:mm:ss')}'",
+										"type": "Expression"
+									}
+								},
+								"sink": {
+									"type": "AzureSqlSink",
+									"writeBehavior": "upsert",
+									"upsertSettings": {
+										"useTempDB": true,
+										"keys": [
+											"PromoKey"
+										]
+									},
+									"sqlWriterUseTableLock": false,
+									"disableMetricsCollection": false
+								},
+								"enableStaging": false,
+								"translator": {
+									"type": "TabularTranslator",
+									"mappings": [
+										{
+											"source": {
+												"name": "PromoKey",
+												"type": "String"
+											},
+											"sink": {
+												"name": "PromoKey",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "Promotion_id",
+												"type": "String"
+											},
+											"sink": {
+												"name": "Promotion_id",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "RegionKey",
+												"type": "String"
+											},
+											"sink": {
+												"name": "RegionKey",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "Description",
+												"type": "String"
+											},
+											"sink": {
+												"name": "Description",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "Start_Date",
+												"type": "DateTime"
+											},
+											"sink": {
+												"name": "Start_Date",
+												"type": "DateTime",
+												"physicalType": "datetime"
+											}
+										},
+										{
+											"source": {
+												"name": "End_Date",
+												"type": "DateTime"
+											},
+											"sink": {
+												"name": "End_Date",
+												"type": "DateTime",
+												"physicalType": "datetime"
+											}
+										},
+										{
+											"source": {
+												"name": "last_updated",
+												"type": "DateTime"
+											},
+											"sink": {
+												"name": "last_updated",
+												"type": "DateTime",
+												"physicalType": "datetime"
+											}
+										}
+									],
+									"typeConversion": true,
+									"typeConversionSettings": {
+										"allowDataTruncation": true,
+										"treatBooleanAsNumber": false
+									}
+								}
+							},
+							"inputs": [
+								{
+									"referenceName": "OperationalDB",
+									"type": "DatasetReference",
+									"parameters": {
+										"ConnectionStringKey": {
+											"value": "@pipeline().parameters.OperationalDBConnectionStringKey",
+											"type": "Expression"
+										},
+										"KeyVault_URL": {
+											"value": "@pipeline().parameters.KeyVault_URL",
+											"type": "Expression"
+										}
+									}
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "Promotion_Staging",
+									"type": "DatasetReference",
+									"parameters": {
+										"ConnectionStringKey": {
+											"value": "@pipeline().parameters.StagingDBConnectionStringKey",
+											"type": "Expression"
+										},
+										"KeyVault_URL": "@pipeline().parameters.KeyVault_URL"
+									}
+								}
+							]
+						}
+					]
+				}
+			},
+			{
+				"name": "CheckForNewPeriodData",
+				"type": "Lookup",
+				"dependsOn": [
+					{
+						"activity": "Create Extract Log Entry",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "MySqlSource",
+						"query": {
+							"value": "select count(1) as ct from periods\nwhere last_updated > '@{formatDateTime(variables('LastExtractDate'),'yyyy-MM-dd HH:mm:ss')}'",
+							"type": "Expression"
+						}
+					},
+					"dataset": {
+						"referenceName": "OperationalDB",
+						"type": "DatasetReference",
+						"parameters": {
+							"ConnectionStringKey": {
+								"value": "@pipeline().parameters.OperationalDBConnectionStringKey",
+								"type": "Expression"
+							},
+							"KeyVault_URL": {
+								"value": "@pipeline().parameters.KeyVault_URL",
+								"type": "Expression"
+							}
+						}
+					}
+				}
+			},
+			{
+				"name": "If New Period Data",
+				"type": "IfCondition",
+				"dependsOn": [
+					{
+						"activity": "CheckForNewPeriodData",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@greater(activity('CheckForNewPeriodData').output.firstRow.ct,0)",
+						"type": "Expression"
+					},
+					"ifTrueActivities": [
+						{
+							"name": "Copy Period Data",
+							"type": "Copy",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "MySqlSource",
+									"query": {
+										"value": "select \nDate,\nDay_of_Week,\nFiscal_Year,\nMonth_In_Year,\nWeek_In_Year,\nPeriod,\nMonth_In_Period,\nQuarter,\nlast_updated\n\nfrom periods\nwhere last_updated >= '@{formatDateTime(variables('LastExtractDate'),'yyyy-MM-dd HH:mm:ss')}'",
+										"type": "Expression"
+									}
+								},
+								"sink": {
+									"type": "AzureSqlSink",
+									"writeBehavior": "insert",
+									"sqlWriterUseTableLock": false
+								},
+								"enableStaging": false,
+								"translator": {
+									"type": "TabularTranslator",
+									"mappings": [
+										{
+											"source": {
+												"name": "Date",
+												"type": "DateTime"
+											},
+											"sink": {
+												"name": "Date",
+												"type": "DateTime",
+												"physicalType": "date"
+											}
+										},
+										{
+											"source": {
+												"name": "Day_of_Week",
+												"type": "Int16"
+											},
+											"sink": {
+												"name": "Day_of_Week",
+												"type": "Int16",
+												"physicalType": "smallint"
+											}
+										},
+										{
+											"source": {
+												"name": "Fiscal_Year",
+												"type": "Int32"
+											},
+											"sink": {
+												"name": "Fiscal_Year",
+												"type": "Int32",
+												"physicalType": "int"
+											}
+										},
+										{
+											"source": {
+												"name": "Month_In_Year",
+												"type": "Int16"
+											},
+											"sink": {
+												"name": "Month_In_Year",
+												"type": "Int16",
+												"physicalType": "smallint"
+											}
+										},
+										{
+											"source": {
+												"name": "Week_In_Year",
+												"type": "Int16"
+											},
+											"sink": {
+												"name": "Week_In_Year",
+												"type": "Int16",
+												"physicalType": "smallint"
+											}
+										},
+										{
+											"source": {
+												"name": "Period",
+												"type": "Int16"
+											},
+											"sink": {
+												"name": "Period",
+												"type": "Int16",
+												"physicalType": "smallint"
+											}
+										},
+										{
+											"source": {
+												"name": "Month_In_Period",
+												"type": "Int16"
+											},
+											"sink": {
+												"name": "Month_In_Period",
+												"type": "Int16",
+												"physicalType": "smallint"
+											}
+										},
+										{
+											"source": {
+												"name": "Quarter",
+												"type": "Int16"
+											},
+											"sink": {
+												"name": "Quarter",
+												"type": "Int16",
+												"physicalType": "smallint"
+											}
+										},
+										{
+											"source": {
+												"name": "last_updated",
+												"type": "DateTime"
+											},
+											"sink": {
+												"name": "last_updated",
+												"type": "DateTime",
+												"physicalType": "datetime"
+											}
+										}
+									],
+									"typeConversion": true,
+									"typeConversionSettings": {
+										"allowDataTruncation": true,
+										"treatBooleanAsNumber": false
+									}
+								}
+							},
+							"inputs": [
+								{
+									"referenceName": "OperationalDB",
+									"type": "DatasetReference",
+									"parameters": {
+										"ConnectionStringKey": {
+											"value": "@pipeline().parameters.OperationalDBConnectionStringKey",
+											"type": "Expression"
+										},
+										"KeyVault_URL": {
+											"value": "@pipeline().parameters.KeyVault_URL",
+											"type": "Expression"
+										}
+									}
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "Date_Staging",
+									"type": "DatasetReference",
+									"parameters": {
+										"ConnectionStringKey": {
+											"value": "@pipeline().parameters.StagingDBConnectionStringKey",
+											"type": "Expression"
+										},
+										"KeyVault_URL": "@pipeline().parameters.KeyVault_URL"
+									}
+								}
+							]
+						}
+					]
+				}
+			},
+			{
+				"name": "CheckForNewLocationData",
+				"type": "Lookup",
+				"dependsOn": [
+					{
+						"activity": "Create Extract Log Entry",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "MySqlSource",
+						"query": {
+							"value": "select count(1) as ct from locations\nwhere last_updated > '@{formatDateTime(variables('LastExtractDate'),'yyyy-MM-dd HH:mm:ss')}'",
+							"type": "Expression"
+						}
+					},
+					"dataset": {
+						"referenceName": "OperationalDB",
+						"type": "DatasetReference",
+						"parameters": {
+							"ConnectionStringKey": {
+								"value": "@pipeline().parameters.OperationalDBConnectionStringKey",
+								"type": "Expression"
+							},
+							"KeyVault_URL": {
+								"value": "@pipeline().parameters.KeyVault_URL",
+								"type": "Expression"
+							}
+						}
+					}
+				}
+			},
+			{
+				"name": "If New Location Data",
+				"type": "IfCondition",
+				"dependsOn": [
+					{
+						"activity": "CheckForNewLocationData",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@greater(activity('CheckForNewLocationData').output.firstRow.ct,0)",
+						"type": "Expression"
+					},
+					"ifTrueActivities": [
+						{
+							"name": "Copy Location Data",
+							"type": "Copy",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "MySqlSource",
+									"query": {
+										"value": "select \n\tlocation_id,\n\tl.location_type,\n\tl.Description,\n\tStreet1,\n\tStreet2,\n\tTown,\n\tupper(case \n\t\twhen l.location_type = 'store' then extractValue(l.xml,'retail:store/retail:locationAddress/retail:countryCodeId')\n\t\twhen l.location_type = 'warehouse' then extractValue(l.xml,'retail:warehouse/retail:locationAddress/retail:countryCodeId')\n\t\twhen l.location_type = 'restaurant' then extractValue(l.xml,'retail:restaurant/retail:locationAddress/retail:countryCodeId')\n\t\twhen l.location_type = 'office' then extractValue(l.xml,'retail:office/retail:locationAddress/retail:countryCodeId')\n\t\telse ''\n\tend) as CountryCode,\n\tcc.description as CountryDescription,\n\tupper(coalesce(r3.group_id,lrg.group_id,'-')) as region3,\n\tcoalesce(r3.name,lrg.name,'-') as region3name,\n\tupper(coalesce(r2.group_id,lrg.group_id,'-')) as region2,\n\tcoalesce(r2.name,lrg.name,'-') as region2name,\n\t'ALL' as region1,\n\t'All regions' as region1name,\n\tl.last_updated\n    \nfrom locations l\n\nleft join locationtemplates lt\n\ton lt.template_id = l.template_id\n\nleft join groups r3\n\ton l.region_id = r3.group_id\n\tand r3.group_type_id = 'region'\n\tand r3.level = 3\n\nleft join groups r2\n\ton r3.level_2_Group_id = r2.group_id\n\tand r2.group_type_id = 'region'\n\tand r2.level = 2\n\nleft join groups lrg\n\ton lrg.group_id = (case when l.region_id = '-' then extractValue(lt.xml,'retail:storeTemplate/retail:store/retail:groupId') else l.region_id end)\n\tand lrg.group_type_Id = 'region'\n\nleft join countrycodes cc\non (case \n\twhen l.location_type = 'store' then extractValue(l.xml,'retail:store/retail:locationAddress/retail:countryCodeId')\n    when l.location_type = 'warehouse' then extractValue(l.xml,'retail:warehouse/retail:locationAddress/retail:countryCodeId')\n    when l.location_type = 'restaurant' then extractValue(l.xml,'retail:restaurant/retail:locationAddress/retail:countryCodeId')\n    when l.location_type = 'office' then extractValue(l.xml,'retail:office/retail:locationAddress/retail:countryCodeId')\n\telse ''\nend) = cc.country_id\n \n where l.last_updated > '@{formatDateTime(variables('LastExtractDate'),'yyyy-MM-dd HH:mm:ss')}' or lt.last_updated > '@{formatDateTime(variables('LastExtractDate'),'yyyy-MM-dd HH:mm:ss')}'",
+										"type": "Expression"
+									}
+								},
+								"sink": {
+									"type": "AzureSqlSink",
+									"writeBehavior": "upsert",
+									"upsertSettings": {
+										"useTempDB": true,
+										"keys": [
+											"location_id"
+										]
+									},
+									"sqlWriterUseTableLock": false,
+									"disableMetricsCollection": false
+								},
+								"enableStaging": false,
+								"translator": {
+									"type": "TabularTranslator",
+									"mappings": [
+										{
+											"source": {
+												"name": "location_id",
+												"type": "String"
+											},
+											"sink": {
+												"name": "location_id",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "location_type",
+												"type": "String"
+											},
+											"sink": {
+												"name": "location_type",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "Description",
+												"type": "String"
+											},
+											"sink": {
+												"name": "Description",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "Street1",
+												"type": "String"
+											},
+											"sink": {
+												"name": "Street1",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "Street2",
+												"type": "String"
+											},
+											"sink": {
+												"name": "Street2",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "Town",
+												"type": "String"
+											},
+											"sink": {
+												"name": "Town",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "CountryCode",
+												"type": "String"
+											},
+											"sink": {
+												"name": "CountryCode",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "CountryDescription",
+												"type": "String"
+											},
+											"sink": {
+												"name": "CountryDescription",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "region1",
+												"type": "String"
+											},
+											"sink": {
+												"name": "Region1",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "region1name",
+												"type": "String"
+											},
+											"sink": {
+												"name": "Region1Name",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "region2",
+												"type": "String"
+											},
+											"sink": {
+												"name": "Region2",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "region2name",
+												"type": "String"
+											},
+											"sink": {
+												"name": "Region2Name",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "region3",
+												"type": "String"
+											},
+											"sink": {
+												"name": "Region3",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "region3name",
+												"type": "String"
+											},
+											"sink": {
+												"name": "Region3Name",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "last_updated",
+												"type": "DateTime"
+											},
+											"sink": {
+												"name": "last_updated",
+												"type": "DateTime",
+												"physicalType": "datetime"
+											}
+										}
+									],
+									"typeConversion": true,
+									"typeConversionSettings": {
+										"allowDataTruncation": true,
+										"treatBooleanAsNumber": false
+									}
+								}
+							},
+							"inputs": [
+								{
+									"referenceName": "OperationalDB",
+									"type": "DatasetReference",
+									"parameters": {
+										"ConnectionStringKey": {
+											"value": "@pipeline().parameters.OperationalDBConnectionStringKey",
+											"type": "Expression"
+										},
+										"KeyVault_URL": {
+											"value": "@pipeline().parameters.KeyVault_URL",
+											"type": "Expression"
+										}
+									}
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "Location_Staging",
+									"type": "DatasetReference",
+									"parameters": {
+										"ConnectionStringKey": {
+											"value": "@pipeline().parameters.StagingDBConnectionStringKey",
+											"type": "Expression"
+										},
+										"KeyVault_URL": "@pipeline().parameters.KeyVault_URL"
+									}
+								}
+							]
+						}
+					]
+				}
+			},
+			{
+				"name": "CheckForNewUserData",
+				"type": "Lookup",
+				"dependsOn": [
+					{
+						"activity": "Create Extract Log Entry",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "MySqlSource",
+						"query": {
+							"value": "select count(1) as ct from users\nwhere last_updated > '@{formatDateTime(variables('LastExtractDate'),'yyyy-MM-dd HH:mm:ss')}'",
+							"type": "Expression"
+						}
+					},
+					"dataset": {
+						"referenceName": "OperationalDB",
+						"type": "DatasetReference",
+						"parameters": {
+							"ConnectionStringKey": {
+								"value": "@pipeline().parameters.OperationalDBConnectionStringKey",
+								"type": "Expression"
+							},
+							"KeyVault_URL": {
+								"value": "@pipeline().parameters.KeyVault_URL",
+								"type": "Expression"
+							}
+						}
+					}
+				}
+			},
+			{
+				"name": "If New User Data",
+				"type": "IfCondition",
+				"dependsOn": [
+					{
+						"activity": "CheckForNewUserData",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@greater(activity('CheckForNewUserData').output.firstRow.ct,0)",
+						"type": "Expression"
+					},
+					"ifTrueActivities": [
+						{
+							"name": "Copy User Data",
+							"type": "Copy",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "MySqlSource",
+									"query": {
+										"value": "select\nupper(user_id) as user_id,\nsurname,\nforename,\nextractValue(xml,'retail:user/retail:displayName') as FullName,\nlast_updated\n\n from users\n where last_updated > '@{formatDateTime(variables('LastExtractDate'),'yyyy-MM-dd HH:mm:ss')}'\n ",
+										"type": "Expression"
+									}
+								},
+								"sink": {
+									"type": "AzureSqlSink",
+									"writeBehavior": "upsert",
+									"upsertSettings": {
+										"useTempDB": true,
+										"keys": [
+											"User_Id"
+										]
+									},
+									"sqlWriterUseTableLock": false,
+									"disableMetricsCollection": false
+								},
+								"enableStaging": false,
+								"translator": {
+									"type": "TabularTranslator",
+									"mappings": [
+										{
+											"source": {
+												"name": "user_id",
+												"type": "String"
+											},
+											"sink": {
+												"name": "User_Id",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "forename",
+												"type": "String"
+											},
+											"sink": {
+												"name": "Forename",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "surname",
+												"type": "String"
+											},
+											"sink": {
+												"name": "Surname",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "FullName",
+												"type": "String"
+											},
+											"sink": {
+												"name": "Fullname",
+												"type": "String",
+												"physicalType": "nvarchar"
+											}
+										},
+										{
+											"source": {
+												"name": "last_updated",
+												"type": "DateTime"
+											},
+											"sink": {
+												"name": "last_updated",
+												"type": "DateTime",
+												"physicalType": "datetime"
+											}
+										}
+									],
+									"typeConversion": true,
+									"typeConversionSettings": {
+										"allowDataTruncation": true,
+										"treatBooleanAsNumber": false
+									}
+								}
+							},
+							"inputs": [
+								{
+									"referenceName": "OperationalDB",
+									"type": "DatasetReference",
+									"parameters": {
+										"ConnectionStringKey": {
+											"value": "@pipeline().parameters.OperationalDBConnectionStringKey",
+											"type": "Expression"
+										},
+										"KeyVault_URL": {
+											"value": "@pipeline().parameters.KeyVault_URL",
+											"type": "Expression"
+										}
+									}
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "User_Staging",
+									"type": "DatasetReference",
+									"parameters": {
+										"ConnectionStringKey": {
+											"value": "@pipeline().parameters.StagingDBConnectionStringKey",
+											"type": "Expression"
+										},
+										"KeyVault_URL": "@pipeline().parameters.KeyVault_URL"
+									}
+								}
+							]
+						}
+					]
+				}
+			},
+			{
+				"name": "Update ExtractLog with Latest UpdateDate",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "If New Promotion Data",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					},
+					{
+						"activity": "If New Tender Data",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					},
+					{
+						"activity": "If New SupplierProduct Data",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					},
+					{
+						"activity": "If New Customer Data",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					},
+					{
+						"activity": "If New MMG Data",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					},
+					{
+						"activity": "If New Period Data",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					},
+					{
+						"activity": "If New Location Data",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					},
+					{
+						"activity": "If New User Data",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "Update_ExtractLog_Staging",
+					"storedProcedureParameters": {
+						"LogId": {
+							"value": {
+								"value": "@{activity('Create Extract Log Entry').output.firstRow.logRecord}",
+								"type": "Expression"
+							},
+							"type": "Int32"
+						},
+						"ExtractType": {
+							"value": "SalesDimension1",
+							"type": "String"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "EnactorDW",
+					"type": "LinkedServiceReference",
+					"parameters": {
+						"ConnectionStringKey": {
+							"value": "@pipeline().parameters.StagingDBConnectionStringKey",
+							"type": "Expression"
+						},
+						"KeyVault_URL": {
+							"value": "@pipeline().parameters.KeyVault_URL",
+							"type": "Expression"
+						}
+					}
+				}
+			}
+		],
+		"parameters": {
+			"StagingDBConnectionStringKey": {
+				"type": "string",
+				"defaultValue": "EnactorBI-StagingDB-ConnectionString"
+			},
+			"OperationalDBConnectionStringKey": {
+				"type": "string",
+				"defaultValue": "Enactor-OperationalDB-ConnectionString"
+			},
+			"KeyVault_URL": {
+				"type": "string",
+				"defaultValue": "https://PR-EVAL-BI-Key-Vault.vault.azure.net/"
+			}
+		},
+		"variables": {
+			"LastExtractDate": {
+				"type": "String"
+			}
+		},
+		"folder": {
+			"name": "OperationalToStaging"
+		},
+		"annotations": [],
+		"lastPublishTime": "2022-10-05T07:08:38Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

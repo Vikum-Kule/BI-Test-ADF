@@ -1,0 +1,138 @@
+{
+	"name": "M3-Cleanup-FlashSales-Data",
+	"properties": {
+		"activities": [
+			{
+				"name": "ProcessAzureAS_FlashSales",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "Truncate FlashSales DW Tables",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "ProcessAzureAS_FlashSales",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"TenantID": {
+							"value": "@pipeline().globalParameters.TenantID",
+							"type": "Expression"
+						},
+						"SubscriptionID": {
+							"value": "@pipeline().globalParameters.SubscriptionID",
+							"type": "Expression"
+						},
+						"Region": {
+							"value": "@pipeline().globalParameters.Region",
+							"type": "Expression"
+						},
+						"Server": {
+							"value": "@pipeline().globalParameters.AS_Server",
+							"type": "Expression"
+						},
+						"DatabaseName": {
+							"value": "@pipeline().parameters.DatabaseName",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			{
+				"name": "Truncate FlashSales Staging Tables",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "truncateStagingFlashSalesTables"
+				},
+				"linkedServiceName": {
+					"referenceName": "EnactorDW_Staging",
+					"type": "LinkedServiceReference",
+					"parameters": {
+						"ConnectionStringKey": {
+							"value": "@pipeline().parameters.StagingDBConnectionStringKey",
+							"type": "Expression"
+						},
+						"KeyVault_URL": {
+							"value": "@pipeline().globalParameters.KeyVault_URL",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			{
+				"name": "Truncate FlashSales DW Tables",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "Truncate FlashSales Staging Tables",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "truncateDWFlashSalesTables"
+				},
+				"linkedServiceName": {
+					"referenceName": "EnactorDW",
+					"type": "LinkedServiceReference",
+					"parameters": {
+						"ConnectionStringKey": {
+							"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+							"type": "Expression"
+						},
+						"KeyVault_URL": {
+							"value": "@pipeline().globalParameters.KeyVault_URL",
+							"type": "Expression"
+						}
+					}
+				}
+			}
+		],
+		"parameters": {
+			"OperationalDBConnectionString": {
+				"type": "string",
+				"defaultValue": "Enactor-OperationalDB-ConnectionString"
+			},
+			"DataWarehouseDBConnectionStringKey": {
+				"type": "string",
+				"defaultValue": "EnactorBI-DataWarehouseDB-ConnectionString"
+			},
+			"StagingDBConnectionStringKey": {
+				"type": "string",
+				"defaultValue": "EnactorBI-StagingDB-ConnectionString"
+			},
+			"DatabaseName": {
+				"type": "string",
+				"defaultValue": "FlashSales"
+			}
+		},
+		"folder": {
+			"name": "Flash_Sales_ETL_Pipelines"
+		},
+		"annotations": []
+	}
+}

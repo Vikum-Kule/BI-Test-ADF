@@ -1,0 +1,79 @@
+{
+	"name": "ItemInventoryLevelWithCost_Staging",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "EnactorDW_Staging",
+			"type": "LinkedServiceReference",
+			"parameters": {
+				"ConnectionStringKey": {
+					"value": "@dataset().ConnectionStringKey",
+					"type": "Expression"
+				},
+				"KeyVault_URL": {
+					"value": "@dataset().KeyVault_URL",
+					"type": "Expression"
+				}
+			}
+		},
+		"parameters": {
+			"ConnectionStringKey": {
+				"type": "string",
+				"defaultValue": "EnactorBI-StagingDB-ConnectionString"
+			},
+			"KeyVault_URL": {
+				"type": "string",
+				"defaultValue": "https://PR-EVAL-BI-Key-Vault.vault.azure.net/"
+			}
+		},
+		"folder": {
+			"name": "Staging/Facts"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [
+			{
+				"name": "Inventory_Item_Id",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Location_Id",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Inventory_Type",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Inventory_Snapshot_Date",
+				"type": "date"
+			},
+			{
+				"name": "MMGroupKey",
+				"type": "nvarchar"
+			},
+			{
+				"name": "quantity",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "last_updated",
+				"type": "date"
+			},
+			{
+				"name": "unit_cost",
+				"type": "float",
+				"precision": 15
+			},
+			{
+				"name": "total_cost",
+				"type": "float",
+				"precision": 15
+			}
+		],
+		"typeProperties": {
+			"schema": "dbo",
+			"table": "vw_Item_Inventory_Level_With_Cost"
+		}
+	}
+}

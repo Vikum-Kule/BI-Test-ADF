@@ -1,0 +1,89 @@
+{
+	"name": "FlashSales_PromotionTriggers_Staging",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "EnactorDW_Staging",
+			"type": "LinkedServiceReference",
+			"parameters": {
+				"ConnectionStringKey": {
+					"value": "@dataset().ConnectionStringKey",
+					"type": "Expression"
+				},
+				"KeyVault_URL": {
+					"value": "@dataset().KeyVault_URL",
+					"type": "Expression"
+				}
+			}
+		},
+		"parameters": {
+			"KeyVault_URL": {
+				"type": "string",
+				"defaultValue": "https://PR-EVAL-BI-Key-Vault.vault.azure.net/"
+			},
+			"ConnectionStringKey": {
+				"type": "string",
+				"defaultValue": "EnactorBI-StagingDB-ConnectionString"
+			}
+		},
+		"folder": {
+			"name": "FlashSalesDatasets/Staging"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [
+			{
+				"name": "transaction_key",
+				"type": "varchar"
+			},
+			{
+				"name": "line_number",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "trigger_number",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "promotion_id",
+				"type": "nvarchar"
+			},
+			{
+				"name": "regionKey",
+				"type": "nvarchar"
+			},
+			{
+				"name": "reward_type",
+				"type": "nvarchar"
+			},
+			{
+				"name": "reward_value",
+				"type": "decimal",
+				"precision": 17,
+				"scale": 6
+			},
+			{
+				"name": "distributed_reward_value",
+				"type": "decimal",
+				"precision": 17,
+				"scale": 6
+			},
+			{
+				"name": "quantity",
+				"type": "float",
+				"precision": 15
+			},
+			{
+				"name": "last_updated",
+				"type": "datetime",
+				"precision": 23,
+				"scale": 3
+			}
+		],
+		"typeProperties": {
+			"schema": "dbo",
+			"table": "FlashSales_PromotionTriggers_Staging"
+		}
+	}
+}

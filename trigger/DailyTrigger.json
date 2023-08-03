@@ -1,0 +1,44 @@
+{
+	"name": "DailyTrigger",
+	"properties": {
+		"description": "Daily at 8.30 - trigger full pipeline run and model processing",
+		"annotations": [],
+		"runtimeState": "Stopped",
+		"pipelines": [
+			{
+				"pipelineReference": {
+					"referenceName": "M1-Execute_ETL_Pipelines",
+					"type": "PipelineReference"
+				},
+				"parameters": {
+					"StagingDBConnectionStringKey": "EnactorBI-StagingDB-ConnectionString",
+					"DataWarehouseDBConnectionStringKey": "EnactorBI-DataWarehouseDB-ConnectionString",
+					"OperationalDBConnectionString": "Enactor-OperationalDB-ConnectionString",
+					"KeyVault_URL": "https://en-bi-kv-demo01.vault.azure.net/",
+					"TenantID": "1d10e28a-ceee-4836-9493-c5bbbb817996",
+					"SubscriptionID": "33fb0613-d250-4bb2-ba76-4385eca3d510",
+					"Region": "uksouth",
+					"Server": "enbiasdemo01",
+					"DatabaseName": "Enactor Retail Sales"
+				}
+			}
+		],
+		"type": "ScheduleTrigger",
+		"typeProperties": {
+			"recurrence": {
+				"frequency": "Day",
+				"interval": 1,
+				"startTime": "2022-07-26T08:30:00",
+				"timeZone": "GMT Standard Time",
+				"schedule": {
+					"minutes": [
+						30
+					],
+					"hours": [
+						8
+					]
+				}
+			}
+		}
+	}
+}

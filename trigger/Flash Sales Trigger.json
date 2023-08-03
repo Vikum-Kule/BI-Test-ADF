@@ -1,0 +1,30 @@
+{
+	"name": "Flash Sales Trigger",
+	"properties": {
+		"annotations": [],
+		"runtimeState": "Stopped",
+		"pipelines": [
+			{
+				"pipelineReference": {
+					"referenceName": "M2-Execute-FlashSales-Pipelines",
+					"type": "PipelineReference"
+				},
+				"parameters": {
+					"KeyVault_URL": "https://PR-EVAL-BI-Key-Vault.vault.azure.net/",
+					"OperationalDBConnectionString": "Enactor-OperationalDB-ConnectionString",
+					"DataWarehouseDBConnectionStringKey": "EnactorBI-DataWarehouseDB-ConnectionString",
+					"StagingDBConnectionStringKey": "EnactorBI-StagingDB-ConnectionString"
+				}
+			}
+		],
+		"type": "ScheduleTrigger",
+		"typeProperties": {
+			"recurrence": {
+				"frequency": "Hour",
+				"interval": 1,
+				"startTime": "2022-09-19T08:00:00",
+				"timeZone": "GMT Standard Time"
+			}
+		}
+	}
+}

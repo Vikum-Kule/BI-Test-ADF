@@ -1,0 +1,143 @@
+{
+	"name": "InsertMissingLocationKeys",
+	"properties": {
+		"folder": {
+			"name": "Dimension Updates"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "ItemInventoryLevelWithCost_Staging",
+						"type": "DatasetReference"
+					},
+					"name": "ItemInventoryLevelWithCostStaging"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimLocation",
+						"type": "DatasetReference"
+					},
+					"name": "DimLocation"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "DimLocation",
+						"type": "DatasetReference"
+					},
+					"name": "InsertDimLocation"
+				}
+			],
+			"transformations": [
+				{
+					"name": "DataSinceLastUpdated"
+				},
+				{
+					"name": "GroupByLocationid"
+				},
+				{
+					"name": "LookupAgainstDimLocation"
+				},
+				{
+					"name": "LocationNotFoundInDimLocation"
+				},
+				{
+					"name": "RenameColumns"
+				},
+				{
+					"name": "DefaultColumns"
+				}
+			],
+			"scriptLines": [
+				"parameters{",
+				"     LastUpdatedDate as string ('2000-01-01 00:00:00')",
+				"}",
+				"source(output(",
+				"          Inventory_Item_Id as string,",
+				"          Location_Id as string,",
+				"          Inventory_Type as string,",
+				"          Inventory_Snapshot_Date as date,",
+				"          MMGroupKey as string,",
+				"          quantity as integer,",
+				"          last_updated as timestamp,",
+				"          unit_cost as double,",
+				"          total_cost as double",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> ItemInventoryLevelWithCostStaging",
+				"source(output(",
+				"          Location_Key as long,",
+				"          location_id as string,",
+				"          Description as string,",
+				"          Town as string,",
+				"          CountryCode as string,",
+				"          CountryDescription as string,",
+				"          Region1 as string,",
+				"          Region1Name as string,",
+				"          Region2 as string,",
+				"          Region2Name as string,",
+				"          Region3 as string,",
+				"          Region3Name as string,",
+				"          IsCurrent as boolean,",
+				"          DateCreated as timestamp",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> DimLocation",
+				"ItemInventoryLevelWithCostStaging filter(last_updated > toTimestamp($LastUpdatedDate,'yyyy-MM-dd HH:mm:ss')) ~> DataSinceLastUpdated",
+				"DataSinceLastUpdated aggregate(groupBy(Location_Id),",
+				"     RecordCount = count(1)) ~> GroupByLocationid",
+				"GroupByLocationid, RenameColumns lookup(Location_Id == DimLocation_id,",
+				"     multiple: false,",
+				"     pickup: 'any',",
+				"     broadcast: 'auto')~> LookupAgainstDimLocation",
+				"LookupAgainstDimLocation filter(isNull(DimLocation_id)) ~> LocationNotFoundInDimLocation",
+				"DimLocation select(mapColumn(",
+				"          DimLocation_Key = Location_Key,",
+				"          DimLocation_id = location_id",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> RenameColumns",
+				"LocationNotFoundInDimLocation derive(Description = 'unk',",
+				"          IsCurrent = toBoolean('true')) ~> DefaultColumns",
+				"DefaultColumns sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          Location_Key as long,",
+				"          location_id as string,",
+				"          Description as string,",
+				"          Town as string,",
+				"          CountryCode as string,",
+				"          CountryDescription as string,",
+				"          Region1 as string,",
+				"          Region1Name as string,",
+				"          Region2 as string,",
+				"          Region2Name as string,",
+				"          Region3 as string,",
+				"          Region3Name as string,",
+				"          location_type as string,",
+				"          IsCurrent as boolean,",
+				"          DateCreated as timestamp",
+				"     ),",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     format: 'table',",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError',",
+				"     mapColumn(",
+				"          location_id = Location_Id,",
+				"          Description,",
+				"          IsCurrent",
+				"     )) ~> InsertDimLocation"
+			]
+		}
+	}
+}

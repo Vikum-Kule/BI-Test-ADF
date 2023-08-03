@@ -1,0 +1,62 @@
+{
+	"name": "M6-Delete-From-FactFlashSales-For-FlashSales-Test",
+	"properties": {
+		"activities": [
+			{
+				"name": "Update FactFlashSales Table",
+				"description": "Delete records that do not belong to the given date ( for flash sales regression testing)",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "updateFactFlashSalesForFlashSalesTesting",
+					"storedProcedureParameters": {
+						"CompletedDateTime": {
+							"value": "2022-06-23",
+							"type": "Datetime"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "EnactorDW",
+					"type": "LinkedServiceReference",
+					"parameters": {
+						"ConnectionStringKey": {
+							"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+							"type": "Expression"
+						},
+						"KeyVault_URL": {
+							"value": "@pipeline().parameters.KeyVault_URL",
+							"type": "Expression"
+						}
+					}
+				}
+			}
+		],
+		"parameters": {
+			"KeyVault_URL": {
+				"type": "string",
+				"defaultValue": "https://PR-EVAL-BI-Key-Vault.vault.azure.net/"
+			},
+			"DataWarehouseDBConnectionStringKey": {
+				"type": "string",
+				"defaultValue": "EnactorBI-DataWarehouseDB-ConnectionString"
+			},
+			"StagingDBConnectionStringKey": {
+				"type": "string",
+				"defaultValue": "EnactorBI-StagingDB-ConnectionString"
+			}
+		},
+		"folder": {
+			"name": "Flash_Sales_ETL_Pipelines/Flash_Sales_Test_Pipelines"
+		},
+		"annotations": []
+	}
+}

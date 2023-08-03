@@ -1,0 +1,67 @@
+{
+	"name": "TenderDimensionUpdate",
+	"properties": {
+		"folder": {
+			"name": "Dimension Updates"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "Tender_Staging",
+						"type": "DatasetReference"
+					},
+					"name": "TenderStagingData"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimTender",
+						"type": "DatasetReference"
+					},
+					"name": "DimTender"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "DimTender",
+						"type": "DatasetReference"
+					},
+					"name": "UpdateDimTender"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimTender",
+						"type": "DatasetReference"
+					},
+					"name": "InsertDimTender"
+				}
+			],
+			"transformations": [
+				{
+					"name": "DataSinceLastUpdate"
+				},
+				{
+					"name": "DimNames"
+				},
+				{
+					"name": "LookupAgainstDimTable"
+				},
+				{
+					"name": "ExistingRows"
+				},
+				{
+					"name": "SetToUpdate"
+				},
+				{
+					"name": "SetIsCurrentToFalse"
+				},
+				{
+					"name": "SetIsCurrentToTrue"
+				}
+			],
+			"script": "parameters{\n\tLastUpdatedDate as string ('2000-01-01 00:00:00')\n}\nsource(output(\n\t\ttender_id as string,\n\t\tTender_type as string,\n\t\tDescription as string,\n\t\tRegionKey as string,\n\t\tlast_updated as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> TenderStagingData\nsource(output(\n\t\tTender_Key as long,\n\t\ttender_id as string,\n\t\tTender_type as string,\n\t\tDescription as string,\n\t\tRegionKey as string,\n\t\tIsCurrent as boolean,\n\t\tDateCreated as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> DimTender\nTenderStagingData filter(last_updated > toTimestamp($LastUpdatedDate,'yyyy-MM-dd HH:mm:ss')) ~> DataSinceLastUpdate\nDimTender select(mapColumn(\n\t\tDimTender_Key = Tender_Key,\n\t\tDimtender_id = tender_id,\n\t\tDimTender_type = Tender_type,\n\t\tDimDescription = Description,\n\t\tDimRegionKey = RegionKey,\n\t\tDimIsCurrent = IsCurrent,\n\t\tDimDateCreated = DateCreated\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> DimNames\nDataSinceLastUpdate, DimNames lookup(tender_id == Dimtender_id,\n\tmultiple: true,\n\tbroadcast: 'auto')~> LookupAgainstDimTable\nLookupAgainstDimTable filter(!isNull(Dimtender_id)) ~> ExistingRows\nSetIsCurrentToFalse alterRow(updateIf(1==1)) ~> SetToUpdate\nExistingRows derive(DimIsCurrent = false()) ~> SetIsCurrentToFalse\nDataSinceLastUpdate derive(IsCurrent = true()) ~> SetIsCurrentToTrue\nSetToUpdate sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tinput(\n\t\tTender_Key as long,\n\t\ttender_id as string,\n\t\tTender_type as string,\n\t\tDescription as string,\n\t\tRegionKey as string,\n\t\tIsCurrent as boolean,\n\t\tDateCreated as timestamp\n\t),\n\tdeletable:false,\n\tinsertable:false,\n\tupdateable:true,\n\tupsertable:false,\n\tkeys:['Tender_Key'],\n\tformat: 'table',\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\tsaveOrder: 0,\n\terrorHandlingOption: 'stopOnFirstError',\n\tmapColumn(\n\t\tTender_Key = DimTender_Key,\n\t\tIsCurrent = DimIsCurrent\n\t)) ~> UpdateDimTender\nSetIsCurrentToTrue sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tinput(\n\t\tTender_Key as long,\n\t\ttender_id as string,\n\t\tTender_type as string,\n\t\tDescription as string,\n\t\tRegionKey as string,\n\t\tIsCurrent as boolean,\n\t\tDateCreated as timestamp\n\t),\n\tdeletable:false,\n\tinsertable:true,\n\tupdateable:false,\n\tupsertable:false,\n\tformat: 'table',\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\terrorHandlingOption: 'stopOnFirstError') ~> InsertDimTender"
+		}
+	}
+}

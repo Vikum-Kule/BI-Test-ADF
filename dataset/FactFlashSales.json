@@ -1,0 +1,225 @@
+{
+	"name": "FactFlashSales",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "EnactorDW",
+			"type": "LinkedServiceReference",
+			"parameters": {
+				"ConnectionStringKey": {
+					"value": "@dataset().ConnectionStringKey",
+					"type": "Expression"
+				},
+				"KeyVault_URL": {
+					"value": "@dataset().KeyVault_URL",
+					"type": "Expression"
+				}
+			}
+		},
+		"parameters": {
+			"KeyVault_URL": {
+				"type": "string",
+				"defaultValue": "https://PR-EVAL-BI-Key-Vault.vault.azure.net/"
+			},
+			"ConnectionStringKey": {
+				"type": "string",
+				"defaultValue": "EnactorBI-DataWarehouseDB-ConnectionString"
+			}
+		},
+		"folder": {
+			"name": "FlashSalesDatasets/DataWarehouse"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [
+			{
+				"name": "transaction_id",
+				"type": "nvarchar"
+			},
+			{
+				"name": "line_number",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "Location_Key",
+				"type": "bigint",
+				"precision": 19
+			},
+			{
+				"name": "terminal_number",
+				"type": "bigint",
+				"precision": 19
+			},
+			{
+				"name": "Completed_DateTime",
+				"type": "datetime",
+				"precision": 23,
+				"scale": 3
+			},
+			{
+				"name": "Trade_Date_Key",
+				"type": "bigint",
+				"precision": 19
+			},
+			{
+				"name": "MMG_Key",
+				"type": "bigint",
+				"precision": 19
+			},
+			{
+				"name": "Salesperson_Key",
+				"type": "bigint",
+				"precision": 19
+			},
+			{
+				"name": "SalesValueLocal",
+				"type": "decimal",
+				"precision": 17,
+				"scale": 6
+			},
+			{
+				"name": "OrdersValueLocal",
+				"type": "decimal",
+				"precision": 17,
+				"scale": 6
+			},
+			{
+				"name": "ReturnsValueLocal",
+				"type": "decimal",
+				"precision": 17,
+				"scale": 6
+			},
+			{
+				"name": "VoidedValueLocal",
+				"type": "decimal",
+				"precision": 17,
+				"scale": 6
+			},
+			{
+				"name": "PromoValueLocal",
+				"type": "decimal",
+				"precision": 17,
+				"scale": 6
+			},
+			{
+				"name": "ManualDiscValueLocal",
+				"type": "decimal",
+				"precision": 17,
+				"scale": 6
+			},
+			{
+				"name": "PriceOverridesValueLocal",
+				"type": "decimal",
+				"precision": 17,
+				"scale": 6
+			},
+			{
+				"name": "tax_value_local",
+				"type": "decimal",
+				"precision": 17,
+				"scale": 6
+			},
+			{
+				"name": "SalesValueHome",
+				"type": "decimal",
+				"precision": 17,
+				"scale": 6
+			},
+			{
+				"name": "OrdersValueHome",
+				"type": "decimal",
+				"precision": 17,
+				"scale": 6
+			},
+			{
+				"name": "ReturnsValueHome",
+				"type": "decimal",
+				"precision": 17,
+				"scale": 6
+			},
+			{
+				"name": "VoidedValueHome",
+				"type": "decimal",
+				"precision": 17,
+				"scale": 6
+			},
+			{
+				"name": "PromoValueHome",
+				"type": "decimal",
+				"precision": 17,
+				"scale": 6
+			},
+			{
+				"name": "ManualDiscValueHome",
+				"type": "decimal",
+				"precision": 17,
+				"scale": 6
+			},
+			{
+				"name": "PriceOverridesValueHome",
+				"type": "decimal",
+				"precision": 17,
+				"scale": 6
+			},
+			{
+				"name": "tax_value_home",
+				"type": "decimal",
+				"precision": 17,
+				"scale": 6
+			},
+			{
+				"name": "Sales_Quantity",
+				"type": "float",
+				"precision": 15
+			},
+			{
+				"name": "Orders_Quantity",
+				"type": "float",
+				"precision": 15
+			},
+			{
+				"name": "Returns_Quantity",
+				"type": "float",
+				"precision": 15
+			},
+			{
+				"name": "Item_Voided",
+				"type": "bit"
+			},
+			{
+				"name": "Transaction_Voided",
+				"type": "bit"
+			},
+			{
+				"name": "CostValueHome",
+				"type": "decimal",
+				"precision": 17,
+				"scale": 6
+			},
+			{
+				"name": "Hour_Key",
+				"type": "bigint",
+				"precision": 19
+			},
+			{
+				"name": "Tender_Key",
+				"type": "bigint",
+				"precision": 19
+			},
+			{
+				"name": "Currency_Key",
+				"type": "bigint",
+				"precision": 19
+			},
+			{
+				"name": "Promotion_Key",
+				"type": "bigint",
+				"precision": 19
+			}
+		],
+		"typeProperties": {
+			"schema": "dbo",
+			"table": "FactFlashSales"
+		}
+	}
+}

@@ -1,0 +1,66 @@
+{
+	"name": "M4-Update_FlashSalesLY_Table",
+	"properties": {
+		"activities": [
+			{
+				"name": "Copy Sales Data To FlashSalesLY",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "updateFactFlashSalesLY",
+					"storedProcedureParameters": {
+						"TradeDate": {
+							"value": {
+								"value": "@variables('TradeDate')",
+								"type": "Expression"
+							},
+							"type": "Datetime"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "EnactorDW",
+					"type": "LinkedServiceReference",
+					"parameters": {
+						"ConnectionStringKey": {
+							"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+							"type": "Expression"
+						},
+						"KeyVault_URL": {
+							"value": "@pipeline().parameters.KeyVault_URL",
+							"type": "Expression"
+						}
+					}
+				}
+			}
+		],
+		"parameters": {
+			"KeyVault_URL": {
+				"type": "string",
+				"defaultValue": "https://PR-EVAL-BI-Key-Vault.vault.azure.net/"
+			},
+			"DataWarehouseDBConnectionStringKey": {
+				"type": "string",
+				"defaultValue": "EnactorBI-DataWarehouseDB-ConnectionString"
+			}
+		},
+		"variables": {
+			"TradeDate": {
+				"type": "String",
+				"defaultValue": "2000-01-01"
+			}
+		},
+		"folder": {
+			"name": "Flash_Sales_ETL_Pipelines/Flash_Sales_Test_Pipelines"
+		},
+		"annotations": []
+	}
+}

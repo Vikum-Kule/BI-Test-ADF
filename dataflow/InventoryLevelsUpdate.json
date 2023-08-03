@@ -1,0 +1,335 @@
+{
+	"name": "InventoryLevelsUpdate",
+	"properties": {
+		"folder": {
+			"name": "Fact Updates"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "ItemInventoryLevelWithCost_Staging",
+						"type": "DatasetReference"
+					},
+					"name": "InventoryLevelsStaging"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimLocation",
+						"type": "DatasetReference"
+					},
+					"name": "DimLocation"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimProduct",
+						"type": "DatasetReference"
+					},
+					"name": "DimProduct"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimInventoryType",
+						"type": "DatasetReference"
+					},
+					"name": "DimInventoryType"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimMMG",
+						"type": "DatasetReference"
+					},
+					"name": "DimMMG"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimDate",
+						"type": "DatasetReference"
+					},
+					"name": "DimDate"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "FactInventoryLevels",
+						"type": "DatasetReference"
+					},
+					"name": "WriteToFactInventoryLevels"
+				}
+			],
+			"transformations": [
+				{
+					"name": "LookupProduct"
+				},
+				{
+					"name": "DimLocationCurrent"
+				},
+				{
+					"name": "DimProductCurrent"
+				},
+				{
+					"name": "DimInventoryTypeCurrent"
+				},
+				{
+					"name": "LookupLocation"
+				},
+				{
+					"name": "LookupInventoryType"
+				},
+				{
+					"name": "DimMMGCurrent"
+				},
+				{
+					"name": "LookupMMG"
+				},
+				{
+					"name": "SelectColumns"
+				},
+				{
+					"name": "LookupDate"
+				},
+				{
+					"name": "DimDateCurrent"
+				}
+			],
+			"scriptLines": [
+				"parameters{",
+				"     LastUpdatedDate as string ('2000-01-01 00:00:00')",
+				"}",
+				"source(output(",
+				"          Inventory_Item_Id as string,",
+				"          Location_Id as string,",
+				"          Inventory_Type as string,",
+				"          Inventory_Snapshot_Date as date,",
+				"          MMGroupKey as string,",
+				"          quantity as integer,",
+				"          last_updated as date,",
+				"          unit_cost as double,",
+				"          total_cost as double",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> InventoryLevelsStaging",
+				"source(output(",
+				"          Location_Key as long,",
+				"          location_id as string,",
+				"          Description as string,",
+				"          Town as string,",
+				"          CountryCode as string,",
+				"          CountryDescription as string,",
+				"          Region1 as string,",
+				"          Region1Name as string,",
+				"          Region2 as string,",
+				"          Region2Name as string,",
+				"          Region3 as string,",
+				"          Region3Name as string,",
+				"          IsCurrent as boolean,",
+				"          DateCreated as timestamp",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> DimLocation",
+				"source(output(",
+				"          Product_Key as long,",
+				"          product_id as string,",
+				"          Type as string,",
+				"          Description as string,",
+				"          Long_description as string,",
+				"          Image_URL as string,",
+				"          IsCurrent as boolean,",
+				"          DateCreated as timestamp",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> DimProduct",
+				"source(output(",
+				"          Inventory_Type_Key as long,",
+				"          Inventory_Type as string,",
+				"          Description as string,",
+				"          IsCurrent as boolean,",
+				"          DateCreated as timestamp",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> DimInventoryType",
+				"source(output(",
+				"          MMG_Key as long,",
+				"          GroupKey as string,",
+				"          Group_Id as string,",
+				"          Group_Hierarchy_Id as string,",
+				"          level as string,",
+				"          Level_1_Group_Id as string,",
+				"          Level_2_Group_Id as string,",
+				"          Level_3_Group_Id as string,",
+				"          Level_4_Group_Id as string,",
+				"          Level_5_Group_Id as string,",
+				"          Level_6_Group_Id as string,",
+				"          Level_7_Group_Id as string,",
+				"          Level_8_Group_Id as string,",
+				"          Level_9_Group_Id as string,",
+				"          Level_10_Group_Id as string,",
+				"          IsCurrent as boolean,",
+				"          DateCreated as timestamp,",
+				"          Name as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> DimMMG",
+				"source(output(",
+				"          Date_Key as long,",
+				"          Date as date,",
+				"          Day_of_Week as integer,",
+				"          Fiscal_Year as integer,",
+				"          Month_In_Year as integer,",
+				"          Week_In_Year as integer,",
+				"          Period as integer,",
+				"          Month_In_Period as integer,",
+				"          Quarter as integer,",
+				"          IsCurrent as boolean,",
+				"          DateCreated as timestamp",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> DimDate",
+				"InventoryLevelsStaging, DimProductCurrent lookup(Inventory_Item_Id == product_id,",
+				"     multiple: false,",
+				"     pickup: 'any',",
+				"     broadcast: 'auto')~> LookupProduct",
+				"DimLocation filter(IsCurrent==true()) ~> DimLocationCurrent",
+				"DimProduct filter(IsCurrent==true()) ~> DimProductCurrent",
+				"DimInventoryType filter(IsCurrent==true()) ~> DimInventoryTypeCurrent",
+				"LookupProduct, DimLocationCurrent lookup(InventoryLevelsStaging@Location_Id == DimLocation@location_id,",
+				"     multiple: false,",
+				"     pickup: 'any',",
+				"     broadcast: 'auto')~> LookupLocation",
+				"LookupLocation, DimInventoryTypeCurrent lookup(InventoryLevelsStaging@Inventory_Type == DimInventoryType@Inventory_Type,",
+				"     multiple: false,",
+				"     pickup: 'any',",
+				"     broadcast: 'auto')~> LookupInventoryType",
+				"DimMMG filter(IsCurrent==true()) ~> DimMMGCurrent",
+				"LookupDate, DimMMGCurrent lookup(MMGroupKey == GroupKey,",
+				"     multiple: false,",
+				"     pickup: 'any',",
+				"     broadcast: 'auto')~> LookupMMG",
+				"LookupMMG select(mapColumn(",
+				"          Inventory_Item_Id,",
+				"          Location_Id = InventoryLevelsStaging@Location_Id,",
+				"          Inventory_Type = InventoryLevelsStaging@Inventory_Type,",
+				"          Inventory_Snapshot_Date,",
+				"          MMGroupKey,",
+				"          quantity,",
+				"          last_updated,",
+				"          unit_cost,",
+				"          total_cost,",
+				"          Product_Key,",
+				"          product_id,",
+				"          Type,",
+				"          Description = DimProduct@Description,",
+				"          Long_description,",
+				"          Image_URL,",
+				"          IsCurrent = DimProduct@IsCurrent,",
+				"          DateCreated = DimProduct@DateCreated,",
+				"          Location_Key,",
+				"          location_id = DimLocation@location_id,",
+				"          Description = DimLocation@Description,",
+				"          Town,",
+				"          CountryCode,",
+				"          CountryDescription,",
+				"          Region1,",
+				"          Region1Name,",
+				"          Region2,",
+				"          Region2Name,",
+				"          Region3,",
+				"          Region3Name,",
+				"          IsCurrent = DimLocation@IsCurrent,",
+				"          DateCreated = DimLocation@DateCreated,",
+				"          Inventory_Type_Key,",
+				"          Inventory_Type = DimInventoryType@Inventory_Type,",
+				"          Description = DimInventoryType@Description,",
+				"          IsCurrent = DimInventoryType@IsCurrent,",
+				"          DateCreated = DimInventoryType@DateCreated,",
+				"          Date_Key,",
+				"          Date,",
+				"          Day_of_Week,",
+				"          Fiscal_Year,",
+				"          Month_In_Year,",
+				"          Week_In_Year,",
+				"          Period,",
+				"          Month_In_Period,",
+				"          Quarter,",
+				"          IsCurrent = DimDate@IsCurrent,",
+				"          DateCreated = DimDate@DateCreated,",
+				"          MMG_Key,",
+				"          GroupKey,",
+				"          Group_Id,",
+				"          Group_Hierarchy_Id,",
+				"          level,",
+				"          Level_1_Group_Id,",
+				"          Level_2_Group_Id,",
+				"          Level_3_Group_Id,",
+				"          Level_4_Group_Id,",
+				"          Level_5_Group_Id,",
+				"          Level_6_Group_Id,",
+				"          Level_7_Group_Id,",
+				"          Level_8_Group_Id,",
+				"          Level_9_Group_Id,",
+				"          Level_10_Group_Id,",
+				"          IsCurrent = DimMMG@IsCurrent,",
+				"          DateCreated = DimMMG@DateCreated,",
+				"          Name",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> SelectColumns",
+				"LookupInventoryType, DimDateCurrent lookup(last_updated == Date,",
+				"     multiple: false,",
+				"     pickup: 'any',",
+				"     broadcast: 'auto')~> LookupDate",
+				"DimDate filter(IsCurrent==true()) ~> DimDateCurrent",
+				"SelectColumns sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          Product_Key as long,",
+				"          Inventory_Type_Key as long,",
+				"          Location_Key as long,",
+				"          SnapshotDate as date,",
+				"          LastUpdatedDate_key as long,",
+				"          quantity as double,",
+				"          MMG_Key as long,",
+				"          unit_cost as decimal(17,6),",
+				"          total_cost as decimal(17,6),",
+				"          unit_retail as decimal(17,6),",
+				"          total_retail as decimal(17,6),",
+				"          DateCreated as timestamp",
+				"     ),",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError',",
+				"     mapColumn(",
+				"          Product_Key,",
+				"          Inventory_Type_Key,",
+				"          Location_Key,",
+				"          SnapshotDate = Inventory_Snapshot_Date,",
+				"          LastUpdatedDate_key = Date_Key,",
+				"          quantity,",
+				"          MMG_Key,",
+				"          unit_cost,",
+				"          total_cost,",
+				"          DateCreated",
+				"     )) ~> WriteToFactInventoryLevels"
+			]
+		}
+	}
+}

@@ -1,0 +1,155 @@
+{
+	"name": "InsertMissingProductKeys",
+	"properties": {
+		"folder": {
+			"name": "Dimension Updates"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "StockAdjutment_Staging_Full",
+						"type": "DatasetReference"
+					},
+					"name": "StockAdjustmentStagingFull",
+					"description": "Import data from StockAdjustmentStagingFull"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimProduct",
+						"type": "DatasetReference"
+					},
+					"name": "DimProduct"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "DimProduct",
+						"type": "DatasetReference"
+					},
+					"name": "InsertDimProduct",
+					"description": "Export data to DimProduct"
+				}
+			],
+			"transformations": [
+				{
+					"name": "DataSinceLastUpdated"
+				},
+				{
+					"name": "GroupByProductId"
+				},
+				{
+					"name": "LookupAgainstDimProduct"
+				},
+				{
+					"name": "ProductNotFoundInDimProduct"
+				},
+				{
+					"name": "RenameColumns"
+				},
+				{
+					"name": "DefaultColumns"
+				}
+			],
+			"scriptLines": [
+				"parameters{",
+				"     LastUpdatedDate as string ('2000-01-01 00:00:00')",
+				"}",
+				"source(output(",
+				"          Stock_Adjustment_Id as string,",
+				"          Created_By_User_Id as string,",
+				"          From_Location_Id as string,",
+				"          To_Location_Id as string,",
+				"          From_Inventory_Type as string,",
+				"          To_Inventory_Type as string,",
+				"          From_Stock_Ledger_Trans_Type as string,",
+				"          To_Stock_Ledger_Trans_Type as string,",
+				"          Status as string,",
+				"          Reason_Code_Id as string,",
+				"          Product_Id as string,",
+				"          Qty as double,",
+				"          Reason_Id as string,",
+				"          last_updated as timestamp",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> StockAdjustmentStagingFull",
+				"source(output(",
+				"          Product_Key as long,",
+				"          product_id as string,",
+				"          Type as string,",
+				"          Description as string,",
+				"          Long_description as string,",
+				"          Image_URL as string,",
+				"          IsCurrent as boolean,",
+				"          DateCreated as timestamp,",
+				"          Colour_Key as long,",
+				"          Size_Key as long,",
+				"          MMG_Key as long,",
+				"          Style_Key as long,",
+				"          Product_Status as string,",
+				"          Style_Id as string,",
+				"          Style_Description as string,",
+				"          Primary_Supplier_Key as long,",
+				"          Season_Key as long",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> DimProduct",
+				"StockAdjustmentStagingFull filter(last_updated > toTimestamp($LastUpdatedDate,'yyyy-MM-dd HH:mm:ss')) ~> DataSinceLastUpdated",
+				"DataSinceLastUpdated aggregate(groupBy(Product_Id),",
+				"     RecordCount = count(1)) ~> GroupByProductId",
+				"GroupByProductId, RenameColumns lookup(Product_Id == DimProduct_id,",
+				"     multiple: false,",
+				"     pickup: 'any',",
+				"     broadcast: 'auto')~> LookupAgainstDimProduct",
+				"LookupAgainstDimProduct filter(isNull(DimProduct_id)) ~> ProductNotFoundInDimProduct",
+				"DimProduct select(mapColumn(",
+				"          DimProduct_Key = Product_Key,",
+				"          DimProduct_id = product_id",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> RenameColumns",
+				"ProductNotFoundInDimProduct derive(Description = 'unk',",
+				"          IsCurrent = toBoolean('true')) ~> DefaultColumns",
+				"DefaultColumns sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          Product_Key as long,",
+				"          product_id as string,",
+				"          Type as string,",
+				"          Description as string,",
+				"          Long_description as string,",
+				"          Image_URL as string,",
+				"          IsCurrent as boolean,",
+				"          DateCreated as timestamp,",
+				"          Colour_Key as long,",
+				"          Size_Key as long,",
+				"          MMG_Key as long,",
+				"          Style_Key as long,",
+				"          Product_Status as string,",
+				"          Style_Id as string,",
+				"          Style_Description as string,",
+				"          Primary_Supplier_Key as long,",
+				"          Season_Key as long",
+				"     ),",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     format: 'table',",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError',",
+				"     mapColumn(",
+				"          product_id = Product_Id,",
+				"          Description,",
+				"          IsCurrent",
+				"     )) ~> InsertDimProduct"
+			]
+		}
+	}
+}

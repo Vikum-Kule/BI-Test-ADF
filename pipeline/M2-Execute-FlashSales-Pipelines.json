@@ -1,0 +1,132 @@
+{
+	"name": "M2-Execute-FlashSales-Pipelines",
+	"properties": {
+		"activities": [
+			{
+				"name": "S-Operational To Staging",
+				"type": "ExecutePipeline",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "S6_Copy_ProductSales_Fact_To_Staging",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"KeyVault_URL": {
+							"value": "@pipeline().globalParameters.KeyVault_URL",
+							"type": "Expression"
+						},
+						"OperationalDBConnectionStringKey": {
+							"value": "@pipeline().parameters.OperationalDBConnectionString",
+							"type": "Expression"
+						},
+						"StagingDBConnectionStringKey": {
+							"value": "@pipeline().parameters.StagingDBConnectionStringKey",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			{
+				"name": "D-Staging To Data Warehouse",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "S-Operational To Staging",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "D3-Update_Fact_Tables",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"StagingDBConnectionStringKey": {
+							"value": "@pipeline().parameters.StagingDBConnectionStringKey",
+							"type": "Expression"
+						},
+						"DataWarehouseDBConnectionStringKey": {
+							"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+							"type": "Expression"
+						},
+						"KeyVault_URL": {
+							"value": "@pipeline().globalParameters.KeyVault_URL",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			{
+				"name": "ProcessAzureAS_FlashSales",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "D-Staging To Data Warehouse",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "ProcessAzureAS_FlashSales",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"TenantID": {
+							"value": "@pipeline().globalParameters.TenantID",
+							"type": "Expression"
+						},
+						"SubscriptionID": {
+							"value": "@pipeline().globalParameters.SubscriptionID",
+							"type": "Expression"
+						},
+						"Region": {
+							"value": "@pipeline().globalParameters.Region",
+							"type": "Expression"
+						},
+						"Server": {
+							"value": "@pipeline().globalParameters.AS_Server",
+							"type": "Expression"
+						},
+						"DatabaseName": {
+							"value": "@pipeline().parameters.DatabaseName",
+							"type": "Expression"
+						}
+					}
+				}
+			}
+		],
+		"parameters": {
+			"OperationalDBConnectionString": {
+				"type": "string",
+				"defaultValue": "Enactor-OperationalDB-ConnectionString"
+			},
+			"DataWarehouseDBConnectionStringKey": {
+				"type": "string",
+				"defaultValue": "EnactorBI-DataWarehouseDB-ConnectionString"
+			},
+			"StagingDBConnectionStringKey": {
+				"type": "string",
+				"defaultValue": "EnactorBI-StagingDB-ConnectionString"
+			},
+			"DatabaseName": {
+				"type": "string",
+				"defaultValue": "FlashSales"
+			}
+		},
+		"folder": {
+			"name": "Flash_Sales_ETL_Pipelines"
+		},
+		"annotations": []
+	}
+}

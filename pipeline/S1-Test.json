@@ -1,0 +1,522 @@
+{
+	"name": "S1-Test",
+	"properties": {
+		"activities": [
+			{
+				"name": "Copy Cashsessions_Full Table",
+				"type": "Copy",
+				"dependsOn": [
+					{
+						"activity": "Create Extract Log Entry",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "MySqlSource",
+						"query": {
+							"value": "select distinct \n  \tcs.Investigation_Status,\n\tcst.Location_Id,\n\tcst.Type,\n\tcst.Owner_Id,\n\tcst.Start_Date,\n\tcst.End_Date,\n\tcst.Status,\n\tcst.Is_Banked,\n\tcst.Is_Opening_Value_Set,\n\tcstt.Item_Id,\n\tcstt.Currency_Id,\n\tcstt.Base_Currency_Id,\n\tcstt.Tender_Id,\n\tcstt.Expected_Value,\n\tcstt.Base_Expected_Value,\n\tcstt.Floated_Value,\n\tcstt.Base_Floated_Value,\n\tcstt.Opening_Balance_Value,\n\tcstt.Base_Opening_Balance_Value,\n\tcstt.Counted_Value,\n\tcstt.Base_Counted_Value,\n\tcstt.Expected_Quantity,\n\tcstt.Counted_Quantity,\n\tcst.Last_Updated\n\n  FROM cashsessions cs \n\ninner JOIN \n\tcashsessiontotals cst\non\n\tcs.Location_Id = cst.Location_Id and \n\tcs.Type = cst.Type and \n\tcs.Owner_Id = cst.Owner_Id and \n\tcs.Start_Date = cst.Start_Date and \n\tcs.End_Date = cst.End_Date \n\ninner JOIN \n\tcashsessiontotaltenders cstt\non\n\tcst.Id = cstt.Id\n\nwhere\n\tcs.Last_Updated > '@{formatDateTime(variables('LastExtractDate'),'yyyy-MM-dd HH:mm:ss')}';\n\t\n",
+							"type": "Expression"
+						}
+					},
+					"sink": {
+						"type": "AzureSqlSink",
+						"writeBehavior": "upsert",
+						"upsertSettings": {
+							"useTempDB": true,
+							"keys": [
+								"Item_Id"
+							]
+						},
+						"sqlWriterUseTableLock": false,
+						"disableMetricsCollection": false
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"mappings": [
+							{
+								"source": {
+									"name": "Investigation_Status",
+									"type": "String"
+								},
+								"sink": {
+									"name": "Investigation_Status",
+									"type": "String",
+									"physicalType": "nvarchar"
+								}
+							},
+							{
+								"source": {
+									"name": "Location_Id",
+									"type": "String"
+								},
+								"sink": {
+									"name": "Location_Id",
+									"type": "String",
+									"physicalType": "nvarchar"
+								}
+							},
+							{
+								"source": {
+									"name": "Type",
+									"type": "Int32"
+								},
+								"sink": {
+									"name": "Type",
+									"type": "Int64",
+									"physicalType": "bigint"
+								}
+							},
+							{
+								"source": {
+									"name": "Owner_Id",
+									"type": "String"
+								},
+								"sink": {
+									"name": "Owner_Id",
+									"type": "String",
+									"physicalType": "nvarchar"
+								}
+							},
+							{
+								"source": {
+									"name": "Start_Date",
+									"type": "DateTime"
+								},
+								"sink": {
+									"name": "Start_Date",
+									"type": "DateTime",
+									"physicalType": "datetime"
+								}
+							},
+							{
+								"source": {
+									"name": "End_Date",
+									"type": "DateTime"
+								},
+								"sink": {
+									"name": "End_Date",
+									"type": "DateTime",
+									"physicalType": "datetime"
+								}
+							},
+							{
+								"source": {
+									"name": "Status",
+									"type": "Int32"
+								},
+								"sink": {
+									"name": "Status",
+									"type": "Int64",
+									"physicalType": "bigint"
+								}
+							},
+							{
+								"source": {
+									"name": "Is_Banked",
+									"type": "Int16"
+								},
+								"sink": {
+									"name": "Is_Banked",
+									"type": "Byte",
+									"physicalType": "tinyint"
+								}
+							},
+							{
+								"source": {
+									"name": "Is_Opening_Value_Set",
+									"type": "Int16"
+								},
+								"sink": {
+									"name": "Is_Opening_Value_Set",
+									"type": "Byte",
+									"physicalType": "tinyint"
+								}
+							},
+							{
+								"source": {
+									"name": "Item_Id",
+									"type": "Int64"
+								},
+								"sink": {
+									"name": "Item_Id",
+									"type": "Int64",
+									"physicalType": "bigint"
+								}
+							},
+							{
+								"source": {
+									"name": "Currency_Id",
+									"type": "String"
+								},
+								"sink": {
+									"name": "Currency_Id",
+									"type": "String",
+									"physicalType": "nvarchar"
+								}
+							},
+							{
+								"source": {
+									"name": "Base_Currency_Id",
+									"type": "String"
+								},
+								"sink": {
+									"name": "Base_Currency_Id",
+									"type": "String",
+									"physicalType": "nvarchar"
+								}
+							},
+							{
+								"source": {
+									"name": "Tender_Id",
+									"type": "String"
+								},
+								"sink": {
+									"name": "Tender_Id",
+									"type": "String",
+									"physicalType": "nvarchar"
+								}
+							},
+							{
+								"source": {
+									"name": "Expected_Value",
+									"type": "Int64"
+								},
+								"sink": {
+									"name": "Expected_Value",
+									"type": "Int64",
+									"physicalType": "bigint"
+								}
+							},
+							{
+								"source": {
+									"name": "Base_Expected_Value",
+									"type": "Int64"
+								},
+								"sink": {
+									"name": "Base_Expected_Value",
+									"type": "Int64",
+									"physicalType": "bigint"
+								}
+							},
+							{
+								"source": {
+									"name": "Floated_Value",
+									"type": "Int64"
+								},
+								"sink": {
+									"name": "Floated_Value",
+									"type": "Int64",
+									"physicalType": "bigint"
+								}
+							},
+							{
+								"source": {
+									"name": "Base_Floated_Value",
+									"type": "Int64"
+								},
+								"sink": {
+									"name": "Base_Floated_Value",
+									"type": "Int64",
+									"physicalType": "bigint"
+								}
+							},
+							{
+								"source": {
+									"name": "Opening_Balance_Value",
+									"type": "Int64"
+								},
+								"sink": {
+									"name": "Opening_Balance_Value",
+									"type": "Int64",
+									"physicalType": "bigint"
+								}
+							},
+							{
+								"source": {
+									"name": "Base_Opening_Balance_Value",
+									"type": "Int64"
+								},
+								"sink": {
+									"name": "Base_Opening_Balance_Value",
+									"type": "Int64",
+									"physicalType": "bigint"
+								}
+							},
+							{
+								"source": {
+									"name": "Counted_Value",
+									"type": "Int64"
+								},
+								"sink": {
+									"name": "Counted_Value",
+									"type": "Int64",
+									"physicalType": "bigint"
+								}
+							},
+							{
+								"source": {
+									"name": "Base_Counted_Value",
+									"type": "Int64"
+								},
+								"sink": {
+									"name": "Base_Counted_Value",
+									"type": "Int64",
+									"physicalType": "bigint"
+								}
+							},
+							{
+								"source": {
+									"name": "Expected_Quantity",
+									"type": "Single"
+								},
+								"sink": {
+									"name": "Expected_Quantity",
+									"type": "Double",
+									"physicalType": "float"
+								}
+							},
+							{
+								"source": {
+									"name": "Counted_Quantity",
+									"type": "Single"
+								},
+								"sink": {
+									"name": "Counted_Quantity",
+									"type": "Double",
+									"physicalType": "float"
+								}
+							},
+							{
+								"source": {
+									"name": "Last_Updated",
+									"type": "DateTime"
+								},
+								"sink": {
+									"name": "Last_Updated",
+									"type": "DateTime",
+									"physicalType": "datetime"
+								}
+							}
+						],
+						"typeConversion": true,
+						"typeConversionSettings": {
+							"allowDataTruncation": true,
+							"treatBooleanAsNumber": false
+						}
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "OperationalDB",
+						"type": "DatasetReference",
+						"parameters": {
+							"ConnectionStringKey": {
+								"value": "@pipeline().parameters.OperationalDBConnectionStringKey",
+								"type": "Expression"
+							},
+							"KeyVault_URL": {
+								"value": "@pipeline().parameters.KeyVault_URL",
+								"type": "Expression"
+							}
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "CashSessions_Staging_Full",
+						"type": "DatasetReference",
+						"parameters": {
+							"KeyVault_URL": {
+								"value": "@pipeline().parameters.KeyVault_URL",
+								"type": "Expression"
+							},
+							"ConnectionStringKey": {
+								"value": "@pipeline().parameters.StagingDBConnectionStringKey",
+								"type": "Expression"
+							}
+						}
+					}
+				]
+			},
+			{
+				"name": "Lookup Last Extract Date",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": "select FORMAT(max(ExtractDateTime),'yyyy-MM-ddTHH:mm:ssZ') as LastSuccessfulExtractDate\nfrom ExtractLog \nwhere ExtractResult = 'Success'\nand ExtractType = 'CashSessions'\n",
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "Customer_Staging",
+						"type": "DatasetReference",
+						"parameters": {
+							"ConnectionStringKey": {
+								"value": "@pipeline().parameters.StagingDBConnectionStringKey",
+								"type": "Expression"
+							},
+							"KeyVault_URL": {
+								"value": "@pipeline().parameters.KeyVault_URL",
+								"type": "Expression"
+							}
+						}
+					}
+				}
+			},
+			{
+				"name": "Create Extract Log Entry",
+				"type": "Lookup",
+				"dependsOn": [
+					{
+						"activity": "Set Last Extract Date",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": "insert ExtractLog \nvalues(getdate(),'CashSessions','Started',getdate());\nselect SCOPE_IDENTITY() as logRecord\n",
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "Customer_Staging",
+						"type": "DatasetReference",
+						"parameters": {
+							"ConnectionStringKey": {
+								"value": "@pipeline().parameters.StagingDBConnectionStringKey",
+								"type": "Expression"
+							},
+							"KeyVault_URL": {
+								"value": "@pipeline().parameters.KeyVault_URL",
+								"type": "Expression"
+							}
+						}
+					}
+				}
+			},
+			{
+				"name": "Set Last Extract Date",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "Lookup Last Extract Date",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "LastExtractDate",
+					"value": {
+						"value": "@{convertFromUtc(activity('Lookup Last Extract Date').output.firstRow.LastSuccessfulExtractDate,'GMT Standard Time')}",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "Update Extract Log Entry",
+				"type": "Lookup",
+				"dependsOn": [
+					{
+						"activity": "Copy Cashsessions_Full Table",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": {
+							"value": "update ExtractLog \nset ExtractResult = 'Success',\nLastUpdatedDate = getdate()\nwhere logid = @{activity('Create Extract Log Entry').output.firstRow.logRecord};\n\nselect 0 res",
+							"type": "Expression"
+						},
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "Customer_Staging",
+						"type": "DatasetReference",
+						"parameters": {
+							"ConnectionStringKey": {
+								"value": "@pipeline().parameters.StagingDBConnectionStringKey",
+								"type": "Expression"
+							},
+							"KeyVault_URL": {
+								"value": "@pipeline().parameters.KeyVault_URL",
+								"type": "Expression"
+							}
+						}
+					}
+				}
+			}
+		],
+		"parameters": {
+			"StagingDBConnectionStringKey": {
+				"type": "string",
+				"defaultValue": "EnactorBI-StagingDB-ConnectionString"
+			},
+			"OperationalDBConnectionStringKey": {
+				"type": "string",
+				"defaultValue": "EnactorBI-DataWarehouseDB-ConnectionString"
+			},
+			"KeyVault_URL": {
+				"type": "string",
+				"defaultValue": "https://PR-EVAL-BI-Key-Vault.vault.azure.net/"
+			}
+		},
+		"variables": {
+			"LastExtractDate": {
+				"type": "String"
+			}
+		},
+		"folder": {
+			"name": "Test"
+		},
+		"annotations": [],
+		"lastPublishTime": "2022-02-16T12:35:08Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

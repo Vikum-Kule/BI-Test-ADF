@@ -1,0 +1,21 @@
+{
+	"name": "BIAzureKeyVault",
+	"properties": {
+		"parameters": {
+			"KeyVault_URL": {
+				"type": "string",
+				"defaultValue": "https://PR-EVAL-BI-Key-Vault.vault.azure.net/"
+			}
+		},
+		"annotations": [],
+		"type": "AzureKeyVault",
+		"typeProperties": {
+			"baseUrl": "@{linkedService().KeyVault_URL}",
+			"credential": {
+				"referenceName": "adf_mi_001",
+				"type": "CredentialReference"
+			}
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/linkedservices"
+}

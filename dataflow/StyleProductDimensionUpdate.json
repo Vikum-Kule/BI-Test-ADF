@@ -1,0 +1,96 @@
+{
+	"name": "StyleProductDimensionUpdate",
+	"properties": {
+		"folder": {
+			"name": "Dimension Updates"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "Product_Staging_Full",
+						"type": "DatasetReference"
+					},
+					"name": "ProductStagingDataFull"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimProduct",
+						"type": "DatasetReference"
+					},
+					"name": "DimProduct"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimMMG",
+						"type": "DatasetReference"
+					},
+					"name": "DimMMG"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimSupplier",
+						"type": "DatasetReference"
+					},
+					"name": "DimSupplier"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "DimProduct",
+						"type": "DatasetReference"
+					},
+					"name": "UpdateDimProduct"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimProduct",
+						"type": "DatasetReference"
+					},
+					"name": "InsertDimProduct"
+				}
+			],
+			"transformations": [
+				{
+					"name": "DataSinceLastUpdate"
+				},
+				{
+					"name": "DimNames"
+				},
+				{
+					"name": "ExistingRows"
+				},
+				{
+					"name": "SetToUpdate"
+				},
+				{
+					"name": "SetIsCurrentToFalse"
+				},
+				{
+					"name": "SetIsCurrentToTrue"
+				},
+				{
+					"name": "DimMMGCurrent"
+				},
+				{
+					"name": "lookupMMG"
+				},
+				{
+					"name": "StyleProducts"
+				},
+				{
+					"name": "lookupAgainstDimTable"
+				},
+				{
+					"name": "DimSupplierCurrent"
+				},
+				{
+					"name": "lookupSupplier"
+				}
+			],
+			"script": "parameters{\n\tLastUpdatedDate as string ('2000-01-01 00:00:00')\n}\nsource(output(\n\t\tproduct_id as string,\n\t\tType as string,\n\t\tDescription as string,\n\t\tLong_description as string,\n\t\tImage_URL as string,\n\t\tMMGGroupKey as string,\n\t\tlast_updated as timestamp,\n\t\tColour_Id as string,\n\t\tSize_Id as string,\n\t\tstyle as string,\n\t\tProduct_Status as string,\n\t\tprimary_supplier_id as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> ProductStagingDataFull\nsource(output(\n\t\tProduct_Key as long,\n\t\tproduct_id as string,\n\t\tType as string,\n\t\tDescription as string,\n\t\tLong_description as string,\n\t\tImage_URL as string,\n\t\tIsCurrent as boolean,\n\t\tDateCreated as timestamp,\n\t\tColour_Key as long,\n\t\tSize_Key as long,\n\t\tMMG_Key as long,\n\t\tStyle_Key as long,\n\t\tProduct_Status as string,\n\t\tStyle_Id as string,\n\t\tStyle_Description as string,\n\t\tPrimary_Supplier_Key as long\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> DimProduct\nsource(output(\n\t\tMMG_Key as long,\n\t\tGroupKey as string,\n\t\tGroup_Id as string,\n\t\tGroup_Hierarchy_Id as string,\n\t\tlevel as string,\n\t\tLevel_1_Group_Id as string,\n\t\tLevel_2_Group_Id as string,\n\t\tLevel_3_Group_Id as string,\n\t\tLevel_4_Group_Id as string,\n\t\tLevel_5_Group_Id as string,\n\t\tLevel_6_Group_Id as string,\n\t\tLevel_7_Group_Id as string,\n\t\tLevel_8_Group_Id as string,\n\t\tLevel_9_Group_Id as string,\n\t\tLevel_10_Group_Id as string,\n\t\tIsCurrent as boolean,\n\t\tDateCreated as timestamp,\n\t\tName as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> DimMMG\nsource(output(\n\t\tsupplier_key as long,\n\t\tsupplier_id as string,\n\t\tname as string,\n\t\tstatus as string,\n\t\tis_current as boolean,\n\t\tdate_created as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> DimSupplier\nStyleProducts filter(last_updated > toTimestamp($LastUpdatedDate,'yyyy-MM-dd HH:mm:ss')) ~> DataSinceLastUpdate\nDimProduct select(mapColumn(\n\t\tDimProduct_Key = Product_Key,\n\t\tDimproduct_id = product_id,\n\t\tDimType = Type,\n\t\tDimDescription = Description,\n\t\tDimLong_description = Long_description,\n\t\tDimImage_URL = Image_URL,\n\t\tDimIsCurrent = IsCurrent,\n\t\tDimDateCreated = DateCreated,\n\t\tDimColour_Key = Colour_Key,\n\t\tDimSize_Key = Size_Key,\n\t\tDimMMG_Key = MMG_Key,\n\t\tDimPrimary_Supplier_Key = Primary_Supplier_Key\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> DimNames\nlookupAgainstDimTable filter(!isNull(Dimproduct_id)) ~> ExistingRows\nSetIsCurrentToFalse alterRow(updateIf(1==1)) ~> SetToUpdate\nExistingRows derive(DimIsCurrent = false()) ~> SetIsCurrentToFalse\nlookupMMG derive(IsCurrent = true()) ~> SetIsCurrentToTrue\nDimMMG filter(IsCurrent==true()) ~> DimMMGCurrent\nlookupSupplier, DimMMGCurrent lookup(MMGGroupKey == GroupKey,\n\tmultiple: false,\n\tpickup: 'any',\n\tbroadcast: 'auto')~> lookupMMG\nProductStagingDataFull filter(in(['styleColourSizeProduct','styleSizeProduct'],Type)) ~> StyleProducts\nlookupMMG, DimNames lookup(product_id == Dimproduct_id,\n\tmultiple: false,\n\tpickup: 'any',\n\tbroadcast: 'auto')~> lookupAgainstDimTable\nDimSupplier filter(is_current==true()) ~> DimSupplierCurrent\nDataSinceLastUpdate, DimSupplierCurrent lookup(primary_supplier_id == supplier_id,\n\tmultiple: false,\n\tpickup: 'any',\n\tbroadcast: 'auto')~> lookupSupplier\nSetToUpdate sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tinput(\n\t\tProduct_Key as long,\n\t\tproduct_id as string,\n\t\tType as string,\n\t\tDescription as string,\n\t\tLong_description as string,\n\t\tImage_URL as string,\n\t\tIsCurrent as boolean,\n\t\tDateCreated as timestamp,\n\t\tColour_Key as long,\n\t\tSize_Key as long,\n\t\tMMG_Key as long,\n\t\tStyle_Key as long,\n\t\tProduct_Status as string,\n\t\tStyle_Id as string,\n\t\tStyle_Description as string,\n\t\tPrimary_Supplier_Key as long,\n\t\tSeason_Key as long\n\t),\n\tdeletable:false,\n\tinsertable:false,\n\tupdateable:true,\n\tupsertable:false,\n\tkeys:['Product_Key'],\n\tformat: 'table',\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\tsaveOrder: 0,\n\terrorHandlingOption: 'stopOnFirstError',\n\tmapColumn(\n\t\tIsCurrent = DimIsCurrent,\n\t\tProduct_Key = DimProduct_Key\n\t)) ~> UpdateDimProduct\nSetIsCurrentToTrue sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tinput(\n\t\tProduct_Key as long,\n\t\tproduct_id as string,\n\t\tType as string,\n\t\tDescription as string,\n\t\tLong_description as string,\n\t\tImage_URL as string,\n\t\tIsCurrent as boolean,\n\t\tDateCreated as timestamp,\n\t\tColour_Key as long,\n\t\tSize_Key as long,\n\t\tMMG_Key as long,\n\t\tStyle_Key as long,\n\t\tProduct_Status as string,\n\t\tStyle_Id as string,\n\t\tStyle_Description as string,\n\t\tPrimary_Supplier_Key as long,\n\t\tSeason_Key as long\n\t),\n\tdeletable:false,\n\tinsertable:true,\n\tupdateable:false,\n\tupsertable:false,\n\tformat: 'table',\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\terrorHandlingOption: 'stopOnFirstError',\n\tmapColumn(\n\t\tproduct_id,\n\t\tType,\n\t\tDescription,\n\t\tLong_description,\n\t\tImage_URL,\n\t\tIsCurrent,\n\t\tMMG_Key,\n\t\tPrimary_Supplier_Key = supplier_key\n\t)) ~> InsertDimProduct"
+		}
+	}
+}

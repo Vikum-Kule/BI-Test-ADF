@@ -1,0 +1,67 @@
+{
+	"name": "CustomerDimensionUpdate",
+	"properties": {
+		"folder": {
+			"name": "Dimension Updates"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "Customer_Staging",
+						"type": "DatasetReference"
+					},
+					"name": "CustomerStagingData"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimCustomer",
+						"type": "DatasetReference"
+					},
+					"name": "DimCustomer"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "DimCustomer",
+						"type": "DatasetReference"
+					},
+					"name": "UpdateDimCustomer"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimCustomer",
+						"type": "DatasetReference"
+					},
+					"name": "InsertDimCustomer"
+				}
+			],
+			"transformations": [
+				{
+					"name": "DataSinceLastUpdate"
+				},
+				{
+					"name": "DimNames"
+				},
+				{
+					"name": "LookupAgainstDimTable"
+				},
+				{
+					"name": "ExistingRows"
+				},
+				{
+					"name": "SetToUpdate"
+				},
+				{
+					"name": "SetIsCurrentToFalse"
+				},
+				{
+					"name": "SetIsCurrentToTrue"
+				}
+			],
+			"script": "parameters{\n\tLastUpdatedDate as string ('2000-01-01 00:00:00')\n}\nsource(output(\n\t\tCountryCode as string,\n\t\tCustomer_Number as string,\n\t\tForename as string,\n\t\tSurname as string,\n\t\tLoyalty_Scheme_id as string,\n\t\tLoyalty_scheme_description as string,\n\t\ttier_code as string,\n\t\tTier_description as string,\n\t\tlast_updated as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> CustomerStagingData\nsource(output(\n\t\tCustomer_Key as long,\n\t\tCustomer_Number as string,\n\t\tForename as string,\n\t\tSurname as string,\n\t\tIsCurrent as boolean,\n\t\tDateCreated as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> DimCustomer\nCustomerStagingData filter(last_updated > toTimestamp($LastUpdatedDate,'yyyy-MM-dd HH:mm:ss')) ~> DataSinceLastUpdate\nDimCustomer select(mapColumn(\n\t\tDimCustomer_Key = Customer_Key,\n\t\tDimCustomer_Number = Customer_Number,\n\t\tDimForename = Forename,\n\t\tDimSurname = Surname,\n\t\tDimIsCurrent = IsCurrent,\n\t\tDimDateCreated = DateCreated\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> DimNames\nDataSinceLastUpdate, DimNames lookup(Customer_Number == DimCustomer_Number,\n\tmultiple: true,\n\tbroadcast: 'auto')~> LookupAgainstDimTable\nLookupAgainstDimTable filter(!isNull(DimCustomer_Number)) ~> ExistingRows\nSetIsCurrentToFalse alterRow(updateIf(1==1)) ~> SetToUpdate\nExistingRows derive(DimIsCurrent = false()) ~> SetIsCurrentToFalse\nDataSinceLastUpdate derive(IsCurrent = true()) ~> SetIsCurrentToTrue\nSetToUpdate sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tinput(\n\t\tCustomer_Key as long,\n\t\tCustomer_Number as string,\n\t\tForename as string,\n\t\tSurname as string,\n\t\tIsCurrent as boolean,\n\t\tDateCreated as timestamp\n\t),\n\tdeletable:false,\n\tinsertable:false,\n\tupdateable:true,\n\tupsertable:false,\n\tkeys:['Customer_Key'],\n\tformat: 'table',\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\tsaveOrder: 0,\n\terrorHandlingOption: 'stopOnFirstError',\n\tmapColumn(\n\t\tIsCurrent = DimIsCurrent,\n\t\tCustomer_Key = DimCustomer_Key\n\t)) ~> UpdateDimCustomer\nSetIsCurrentToTrue sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tinput(\n\t\tCustomer_Key as long,\n\t\tCustomer_Number as string,\n\t\tForename as string,\n\t\tSurname as string,\n\t\tIsCurrent as boolean,\n\t\tDateCreated as timestamp\n\t),\n\tdeletable:false,\n\tinsertable:true,\n\tupdateable:false,\n\tupsertable:false,\n\tformat: 'table',\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\terrorHandlingOption: 'stopOnFirstError') ~> InsertDimCustomer"
+		}
+	}
+}

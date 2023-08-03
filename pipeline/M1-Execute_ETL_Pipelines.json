@@ -1,0 +1,125 @@
+{
+	"name": "M1-Execute_ETL_Pipelines",
+	"properties": {
+		"activities": [
+			{
+				"name": "S-OperationalToStaging",
+				"type": "ExecutePipeline",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "S-OperationalToStaging",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"OperationalDBConnectionString": {
+							"value": "@pipeline().parameters.OperationalDBConnectionString",
+							"type": "Expression"
+						},
+						"StagingDBConnectionStringKey": {
+							"value": "@pipeline().parameters.StagingDBConnectionStringKey",
+							"type": "Expression"
+						},
+						"KeyVault_URL": {
+							"value": "@pipeline().globalParameters.KeyVault_URL",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			{
+				"name": "D-StagingToDW",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "S-OperationalToStaging",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "D-StagingToDW",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"StagingDBConnectionStringKey": {
+							"value": "@pipeline().parameters.StagingDBConnectionStringKey",
+							"type": "Expression"
+						},
+						"DataWarehouseDBConnectionStringKey": {
+							"value": "@pipeline().parameters.DataWarehouseDBConnectionStringKey",
+							"type": "Expression"
+						},
+						"KeyVault_URL": {
+							"value": "@pipeline().globalParameters.KeyVault_URL",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			{
+				"name": "ProcessAzureAS",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "D-StagingToDW",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "ProcessAzureAS",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"TenantID": {
+							"value": "@pipeline().globalParameters.TenantID",
+							"type": "Expression"
+						},
+						"SubscriptionID": {
+							"value": "@pipeline().globalParameters.TenantID",
+							"type": "Expression"
+						},
+						"Region": {
+							"value": "@pipeline().globalParameters.Region",
+							"type": "Expression"
+						},
+						"Server": {
+							"value": "@pipeline().globalParameters.AS_Server",
+							"type": "Expression"
+						},
+						"DatabaseName": {
+							"value": "@pipeline().globalParameters.AS_Database",
+							"type": "Expression"
+						}
+					}
+				}
+			}
+		],
+		"parameters": {
+			"StagingDBConnectionStringKey": {
+				"type": "string",
+				"defaultValue": "EnactorBI-StagingDB-ConnectionString"
+			},
+			"DataWarehouseDBConnectionStringKey": {
+				"type": "string",
+				"defaultValue": "EnactorBI-DataWarehouseDB-ConnectionString"
+			},
+			"OperationalDBConnectionString": {
+				"type": "string",
+				"defaultValue": "Enactor-OperationalDB-ConnectionString"
+			}
+		},
+		"annotations": []
+	}
+}

@@ -1,0 +1,44 @@
+{
+	"name": "Startup AS at 4am UK Time Weekdays",
+	"properties": {
+		"annotations": [],
+		"runtimeState": "Started",
+		"pipelines": [
+			{
+				"pipelineReference": {
+					"referenceName": "ResumeAzureAS",
+					"type": "PipelineReference"
+				},
+				"parameters": {
+					"SubscriptionID": "33fb0613-d250-4bb2-ba76-4385eca3d510",
+					"Server": "enbiasdemo01",
+					"ResourceGroupName": "en-bi-rg-demo01"
+				}
+			}
+		],
+		"type": "ScheduleTrigger",
+		"typeProperties": {
+			"recurrence": {
+				"frequency": "Week",
+				"interval": 1,
+				"startTime": "2022-07-19T06:00:00Z",
+				"timeZone": "UTC",
+				"schedule": {
+					"minutes": [
+						0
+					],
+					"hours": [
+						4
+					],
+					"weekDays": [
+						"Monday",
+						"Tuesday",
+						"Wednesday",
+						"Thursday",
+						"Friday"
+					]
+				}
+			}
+		}
+	}
+}

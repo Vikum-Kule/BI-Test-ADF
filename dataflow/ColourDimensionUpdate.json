@@ -1,0 +1,67 @@
+{
+	"name": "ColourDimensionUpdate",
+	"properties": {
+		"folder": {
+			"name": "Dimension Updates"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "Colour_Staging",
+						"type": "DatasetReference"
+					},
+					"name": "ColourStagingData"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimColour",
+						"type": "DatasetReference"
+					},
+					"name": "DimColour"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "DimColour",
+						"type": "DatasetReference"
+					},
+					"name": "UpdateDimColour"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimColour",
+						"type": "DatasetReference"
+					},
+					"name": "InsertDimColour"
+				}
+			],
+			"transformations": [
+				{
+					"name": "DataSinceLastUpdate"
+				},
+				{
+					"name": "DimNames"
+				},
+				{
+					"name": "LookupAgainstDimTable"
+				},
+				{
+					"name": "ExistingRows"
+				},
+				{
+					"name": "SetToUpdate"
+				},
+				{
+					"name": "SetIsCurrentToFalse"
+				},
+				{
+					"name": "SetIsCurrentToTrue"
+				}
+			],
+			"script": "parameters{\n\tLastUpdatedDate as string ('2000-01-01 00:00:00')\n}\nsource(output(\n\t\tColour_Id as string,\n\t\tDescription as string,\n\t\tLast_Updated as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> ColourStagingData\nsource(output(\n\t\tColour_Key as long,\n\t\tColour_Id as string,\n\t\tDescription as string,\n\t\tIsCurrent as boolean,\n\t\tDateCreated as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> DimColour\nColourStagingData filter(Last_Updated > toTimestamp($LastUpdatedDate,'yyyy-MM-dd HH:mm:ss')) ~> DataSinceLastUpdate\nDimColour select(mapColumn(\n\t\tDimColour_Key = Colour_Key,\n\t\tDimColour_Id = Colour_Id,\n\t\tDimDescription = Description,\n\t\tDimIsCurrent = IsCurrent,\n\t\tDateCreated\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> DimNames\nDataSinceLastUpdate, DimNames lookup(Colour_Id == DimColour_Id,\n\tmultiple: true,\n\tbroadcast: 'auto')~> LookupAgainstDimTable\nLookupAgainstDimTable filter(!isNull(DimColour_Id)) ~> ExistingRows\nSetIsCurrentToFalse alterRow(updateIf(1==1)) ~> SetToUpdate\nExistingRows derive(DimIsCurrent = false()) ~> SetIsCurrentToFalse\nDataSinceLastUpdate derive(IsCurrent = true()) ~> SetIsCurrentToTrue\nSetToUpdate sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tinput(\n\t\tColour_Key as long,\n\t\tColour_Id as string,\n\t\tDescription as string,\n\t\tIsCurrent as boolean,\n\t\tDateCreated as timestamp\n\t),\n\tdeletable:false,\n\tinsertable:false,\n\tupdateable:true,\n\tupsertable:false,\n\tkeys:['Colour_Key'],\n\tformat: 'table',\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\tsaveOrder: 0,\n\terrorHandlingOption: 'stopOnFirstError',\n\tmapColumn(\n\t\tColour_Key = DimColour_Key,\n\t\tIsCurrent = DimIsCurrent\n\t)) ~> UpdateDimColour\nSetIsCurrentToTrue sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tinput(\n\t\tColour_Key as long,\n\t\tColour_Id as string,\n\t\tDescription as string,\n\t\tIsCurrent as boolean,\n\t\tDateCreated as timestamp\n\t),\n\tdeletable:false,\n\tinsertable:true,\n\tupdateable:false,\n\tupsertable:false,\n\tformat: 'table',\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\tsaveOrder: 1,\n\terrorHandlingOption: 'stopOnFirstError',\n\tmapColumn(\n\t\tColour_Id,\n\t\tDescription,\n\t\tIsCurrent\n\t)) ~> InsertDimColour"
+		}
+	}
+}

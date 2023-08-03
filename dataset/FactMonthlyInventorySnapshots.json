@@ -1,0 +1,104 @@
+{
+	"name": "FactMonthlyInventorySnapshots",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "EnactorDW",
+			"type": "LinkedServiceReference",
+			"parameters": {
+				"ConnectionStringKey": {
+					"value": "@dataset().ConnectionStringKey",
+					"type": "Expression"
+				},
+				"KeyVault_URL": {
+					"value": "@dataset().KeyVault_URL",
+					"type": "Expression"
+				}
+			}
+		},
+		"parameters": {
+			"ConnectionStringKey": {
+				"type": "string",
+				"defaultValue": "EnactorBI-DataWarehouseDB-ConnectionString"
+			},
+			"KeyVault_URL": {
+				"type": "string",
+				"defaultValue": "https://PR-EVAL-BI-Key-Vault.vault.azure.net/"
+			}
+		},
+		"folder": {
+			"name": "Facts"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [
+			{
+				"name": "Product_Key",
+				"type": "bigint",
+				"precision": 19
+			},
+			{
+				"name": "Inventory_Type_Key",
+				"type": "bigint",
+				"precision": 19
+			},
+			{
+				"name": "Location_Key",
+				"type": "bigint",
+				"precision": 19
+			},
+			{
+				"name": "SnapshotDate",
+				"type": "date"
+			},
+			{
+				"name": "LastUpdatedDate_key",
+				"type": "bigint",
+				"precision": 19
+			},
+			{
+				"name": "quantity",
+				"type": "float",
+				"precision": 15
+			},
+			{
+				"name": "MMG_Key",
+				"type": "bigint",
+				"precision": 19
+			},
+			{
+				"name": "unit_cost",
+				"type": "decimal",
+				"precision": 17,
+				"scale": 6
+			},
+			{
+				"name": "total_cost",
+				"type": "decimal",
+				"precision": 17,
+				"scale": 6
+			},
+			{
+				"name": "unit_retail",
+				"type": "decimal",
+				"precision": 17,
+				"scale": 6
+			},
+			{
+				"name": "total_retail",
+				"type": "decimal",
+				"precision": 17,
+				"scale": 6
+			},
+			{
+				"name": "Last_Updated",
+				"type": "datetime",
+				"precision": 23,
+				"scale": 3
+			}
+		],
+		"typeProperties": {
+			"schema": "dbo",
+			"table": "FactMonthlyInventorySnapshots"
+		}
+	}
+}

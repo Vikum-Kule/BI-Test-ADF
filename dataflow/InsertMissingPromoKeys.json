@@ -1,0 +1,149 @@
+{
+	"name": "InsertMissingPromoKeys",
+	"properties": {
+		"folder": {
+			"name": "Dimension Updates"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "PromoSales_Staging_Full",
+						"type": "DatasetReference"
+					},
+					"name": "PromoSalesStagingFull"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimPromotion",
+						"type": "DatasetReference"
+					},
+					"name": "DimPromotion"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "DimPromotion",
+						"type": "DatasetReference"
+					},
+					"name": "InsertDimPromotion"
+				}
+			],
+			"transformations": [
+				{
+					"name": "DataSinceLastUpdated"
+				},
+				{
+					"name": "GroupByPromoKey"
+				},
+				{
+					"name": "LookupAgainstDimPromotion"
+				},
+				{
+					"name": "PromoKeyNotFoundInDimPromotion"
+				},
+				{
+					"name": "RenameColumns"
+				},
+				{
+					"name": "DefaultColumns"
+				}
+			],
+			"scriptLines": [
+				"parameters{",
+				"     LastUpdatedDate as string ('2000-01-01 00:00:00')",
+				"}",
+				"source(output(",
+				"          transaction_Id as string,",
+				"          line_number as integer,",
+				"          trigger_number as integer,",
+				"          promotion_id as string,",
+				"          enactor_promotion_key as string,",
+				"          reward_type as string,",
+				"          reward_value as decimal(17,6),",
+				"          distributed_reward_value as decimal(17,6),",
+				"          promo_trigger_quantity as double,",
+				"          last_updated as timestamp",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> PromoSalesStagingFull",
+				"source(output(",
+				"          Promotion_Key as long,",
+				"          EnactorPromotionKey as string,",
+				"          Promotion_id as string,",
+				"          RegionKey as string,",
+				"          Description as string,",
+				"          Start_Date as timestamp,",
+				"          End_Date as timestamp,",
+				"          IsCurrent as boolean,",
+				"          DateCreated as timestamp",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> DimPromotion",
+				"PromoSalesStagingFull filter(last_updated > toTimestamp($LastUpdatedDate,'yyyy-MM-dd HH:mm:ss')) ~> DataSinceLastUpdated",
+				"DataSinceLastUpdated aggregate(groupBy(enactor_promotion_key),",
+				"     RecordCount = count(1)) ~> GroupByPromoKey",
+				"GroupByPromoKey, RenameColumns lookup(enactor_promotion_key == DimEnactorPromotionKey,",
+				"     multiple: false,",
+				"     pickup: 'any',",
+				"     broadcast: 'auto')~> LookupAgainstDimPromotion",
+				"LookupAgainstDimPromotion filter(isNull(DimEnactorPromotionKey)) ~> PromoKeyNotFoundInDimPromotion",
+				"DimPromotion select(mapColumn(",
+				"          DimPromotion_Key = Promotion_Key,",
+				"          DimEnactorPromotionKey = EnactorPromotionKey,",
+				"          DimPromotion_id = Promotion_id,",
+				"          DimRegionKey = RegionKey,",
+				"          DimDescription = Description,",
+				"          DimStart_Date = Start_Date,",
+				"          DimEnd_Date = End_Date,",
+				"          DimIsCurrent = IsCurrent,",
+				"          DimDateCreated = DateCreated",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> RenameColumns",
+				"PromoKeyNotFoundInDimPromotion derive(Promotion_id = 'unk',",
+				"          RegionKey = 'unk',",
+				"          Description = 'unk',",
+				"          Start_Date = toDate('2000-01-01'),",
+				"          End_Date = toDate('2000-01-01'),",
+				"          IsCurrent = toBoolean('true')) ~> DefaultColumns",
+				"DefaultColumns sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          Promotion_Key as long,",
+				"          EnactorPromotionKey as string,",
+				"          Promotion_id as string,",
+				"          RegionKey as string,",
+				"          Description as string,",
+				"          Start_Date as timestamp,",
+				"          End_Date as timestamp,",
+				"          IsCurrent as boolean,",
+				"          DateCreated as timestamp",
+				"     ),",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError',",
+				"     mapColumn(",
+				"          EnactorPromotionKey = enactor_promotion_key,",
+				"          Promotion_id,",
+				"          RegionKey,",
+				"          Description,",
+				"          Start_Date,",
+				"          End_Date,",
+				"          IsCurrent",
+				"     )) ~> InsertDimPromotion"
+			]
+		}
+	}
+}

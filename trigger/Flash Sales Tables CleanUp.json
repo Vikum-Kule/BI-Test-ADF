@@ -1,0 +1,43 @@
+{
+	"name": "Flash Sales Tables CleanUp",
+	"properties": {
+		"annotations": [],
+		"runtimeState": "Stopped",
+		"pipelines": [
+			{
+				"pipelineReference": {
+					"referenceName": "M3-Cleanup-FlashSales-Data",
+					"type": "PipelineReference"
+				},
+				"parameters": {
+					"KeyVault_URL": "https://PR-EVAL-BI-Key-Vault.vault.azure.net/",
+					"OperationalDBConnectionString": "Enactor-OperationalDB-ConnectionString",
+					"DataWarehouseDBConnectionStringKey": "EnactorBI-DataWarehouseDB-ConnectionString",
+					"StagingDBConnectionStringKey": "EnactorBI-StagingDB-ConnectionString",
+					"TenantID": "0e81f23b-8b67-4f1f-832b-ee8815c8ef62",
+					"SubscriptionID": "89cee0ec-2e9e-4738-8b18-d3cc5a29c156",
+					"Region": "uksouth",
+					"Server": "prevalas001",
+					"DatabaseName": "FlashSales"
+				}
+			}
+		],
+		"type": "ScheduleTrigger",
+		"typeProperties": {
+			"recurrence": {
+				"frequency": "Day",
+				"interval": 1,
+				"startTime": "2022-09-21T00:00:00",
+				"timeZone": "Sri Lanka Standard Time",
+				"schedule": {
+					"minutes": [
+						0
+					],
+					"hours": [
+						6
+					]
+				}
+			}
+		}
+	}
+}

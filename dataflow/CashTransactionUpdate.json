@@ -1,0 +1,307 @@
+{
+	"name": "CashTransactionUpdate",
+	"properties": {
+		"folder": {
+			"name": "Fact Updates"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "CashTansaction_Staging_Full",
+						"type": "DatasetReference"
+					},
+					"name": "CashTransactionStagingFull",
+					"description": "Import data from CashTransaction_Staging_Full"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimLocation",
+						"type": "DatasetReference"
+					},
+					"name": "DimLocation"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimTender",
+						"type": "DatasetReference"
+					},
+					"name": "DimTender",
+					"description": "Import data from DimTender"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimDate",
+						"type": "DatasetReference"
+					},
+					"name": "DimDate"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimUser",
+						"type": "DatasetReference"
+					},
+					"name": "DimUser",
+					"description": "Import data from DimUser"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "FactCashTransaction",
+						"type": "DatasetReference"
+					},
+					"name": "WriteToFactCashTransaction",
+					"description": "Export data to FactCashTransaction"
+				}
+			],
+			"transformations": [
+				{
+					"name": "DataSinceLastUpdate"
+				},
+				{
+					"name": "DimLocationCurrent"
+				},
+				{
+					"name": "DimTenderCurrent"
+				},
+				{
+					"name": "LookupLocation"
+				},
+				{
+					"name": "LookupTender"
+				},
+				{
+					"name": "SelectColumns"
+				},
+				{
+					"name": "LookupDate"
+				},
+				{
+					"name": "DimDateCurrent"
+				},
+				{
+					"name": "DimUserCurrent",
+					"description": "Filtering rows using expressions on columns 'IsCurrent'"
+				},
+				{
+					"name": "lookupUser",
+					"description": "Lookup on 'LookupLoaction' from 'DimUserCurrent'"
+				}
+			],
+			"scriptLines": [
+				"parameters{",
+				"     LastUpdatedDate as string ('2000-01-01 00:00:00')",
+				"}",
+				"source(output(",
+				"          Transaction_Type as string,",
+				"          Device_Id as string,",
+				"          Location_Id as string,",
+				"          Owner_Id as string,",
+				"          Owner_Type as integer,",
+				"          Session_Number as integer,",
+				"          User_Id as string,",
+				"          Transaction_Id as string,",
+				"          Item_Index as integer,",
+				"          Item_Type as string,",
+				"          Tender_Id as string,",
+				"          Value as decimal(17,6),",
+				"          Date_Created as timestamp,",
+				"          Date_Created_Offset as integer,",
+				"          Effective_Date as date,",
+				"          Effective_Date_Offset as integer",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> CashTransactionStagingFull",
+				"source(output(",
+				"          Location_Key as long,",
+				"          location_id as string,",
+				"          Description as string,",
+				"          Town as string,",
+				"          CountryCode as string,",
+				"          CountryDescription as string,",
+				"          Region1 as string,",
+				"          Region1Name as string,",
+				"          Region2 as string,",
+				"          Region2Name as string,",
+				"          Region3 as string,",
+				"          Region3Name as string,",
+				"          IsCurrent as boolean,",
+				"          DateCreated as timestamp",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> DimLocation",
+				"source(output(",
+				"          Tender_Key as long,",
+				"          tender_id as string,",
+				"          Tender_type as string,",
+				"          Description as string,",
+				"          RegionKey as string,",
+				"          IsCurrent as boolean,",
+				"          DateCreated as timestamp",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> DimTender",
+				"source(output(",
+				"          Date_Key as long,",
+				"          Date as date,",
+				"          Day_of_Week as integer,",
+				"          Fiscal_Year as integer,",
+				"          Month_In_Year as integer,",
+				"          Week_In_Year as integer,",
+				"          Period as integer,",
+				"          Month_In_Period as integer,",
+				"          Quarter as integer,",
+				"          IsCurrent as boolean,",
+				"          DateCreated as timestamp",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> DimDate",
+				"source(output(",
+				"          User_Key as long,",
+				"          User_Id as string,",
+				"          Forename as string,",
+				"          Surname as string,",
+				"          Fullname as string,",
+				"          IsCurrent as boolean,",
+				"          DateCreated as timestamp",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> DimUser",
+				"CashTransactionStagingFull filter(Effective_Date > toDate($LastUpdatedDate,'yyyy-MM-dd')) ~> DataSinceLastUpdate",
+				"DimLocation filter(IsCurrent==true()) ~> DimLocationCurrent",
+				"DimTender filter(IsCurrent==true()) ~> DimTenderCurrent",
+				"DataSinceLastUpdate, DimLocationCurrent lookup(CashTransactionStagingFull@Location_Id == DimLocation@location_id,",
+				"     multiple: false,",
+				"     pickup: 'any',",
+				"     broadcast: 'auto')~> LookupLocation",
+				"lookupUser, DimTenderCurrent lookup(CashTransactionStagingFull@Tender_Id == DimTender@tender_id,",
+				"     multiple: false,",
+				"     pickup: 'any',",
+				"     broadcast: 'auto')~> LookupTender",
+				"LookupDate select(mapColumn(",
+				"          Transaction_Type,",
+				"          Device_Id,",
+				"          Location_Id = CashTransactionStagingFull@Location_Id,",
+				"          Owner_Id,",
+				"          Owner_Type,",
+				"          Session_Number,",
+				"          User_Id = CashTransactionStagingFull@User_Id,",
+				"          Transaction_Id,",
+				"          Item_Index,",
+				"          Item_Type,",
+				"          Tender_Id = CashTransactionStagingFull@Tender_Id,",
+				"          Value,",
+				"          Date_Created,",
+				"          Date_Created_Offset,",
+				"          Effective_Date,",
+				"          Effective_Date_Offset,",
+				"          Location_Key,",
+				"          location_id = DimLocation@location_id,",
+				"          Description = DimLocation@Description,",
+				"          Town,",
+				"          CountryCode,",
+				"          CountryDescription,",
+				"          Region1,",
+				"          Region1Name,",
+				"          Region2,",
+				"          Region2Name,",
+				"          Region3,",
+				"          Region3Name,",
+				"          IsCurrent = DimLocation@IsCurrent,",
+				"          DateCreated = DimLocation@DateCreated,",
+				"          User_Key,",
+				"          User_Id = DimUser@User_Id,",
+				"          Forename,",
+				"          Surname,",
+				"          Fullname,",
+				"          IsCurrent = DimUser@IsCurrent,",
+				"          DateCreated = DimUser@DateCreated,",
+				"          Tender_Key,",
+				"          tender_id = DimTender@tender_id,",
+				"          Tender_type,",
+				"          Description = DimTender@Description,",
+				"          RegionKey,",
+				"          IsCurrent = DimTender@IsCurrent,",
+				"          DateCreated = DimTender@DateCreated,",
+				"          Date_Key,",
+				"          Date,",
+				"          Day_of_Week,",
+				"          Fiscal_Year,",
+				"          Month_In_Year,",
+				"          Week_In_Year,",
+				"          Period,",
+				"          Month_In_Period,",
+				"          Quarter,",
+				"          IsCurrent = DimDate@IsCurrent,",
+				"          DateCreated = DimDate@DateCreated",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> SelectColumns",
+				"LookupTender, DimDateCurrent lookup(Effective_Date == Date,",
+				"     multiple: false,",
+				"     pickup: 'any',",
+				"     broadcast: 'auto')~> LookupDate",
+				"DimDate filter(IsCurrent==true()) ~> DimDateCurrent",
+				"DimUser filter(IsCurrent==true()) ~> DimUserCurrent",
+				"LookupLocation, DimUserCurrent lookup(CashTransactionStagingFull@User_Id == DimUser@User_Id,",
+				"     multiple: false,",
+				"     pickup: 'any',",
+				"     broadcast: 'auto')~> lookupUser",
+				"SelectColumns sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          Transaction_Type as string,",
+				"          Device_Id as string,",
+				"          Location_Key as long,",
+				"          Owner_Id as string,",
+				"          Session_Number as integer,",
+				"          User_Key as long,",
+				"          Transaction_Id as string,",
+				"          Item_Index as integer,",
+				"          Item_Type as string,",
+				"          Tender_Key as long,",
+				"          Value as decimal(17,6),",
+				"          Effective_Date_Key as long,",
+				"          Effective_Date_Offset as integer,",
+				"          DateCreated as timestamp",
+				"     ),",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError',",
+				"     mapColumn(",
+				"          Transaction_Type,",
+				"          Device_Id,",
+				"          Location_Key,",
+				"          Owner_Id,",
+				"          Session_Number,",
+				"          User_Key,",
+				"          Transaction_Id,",
+				"          Item_Index,",
+				"          Item_Type,",
+				"          Tender_Key,",
+				"          Value,",
+				"          Effective_Date_Key = Date_Key,",
+				"          Effective_Date_Offset,",
+				"          DateCreated",
+				"     )) ~> WriteToFactCashTransaction"
+			]
+		}
+	}
+}

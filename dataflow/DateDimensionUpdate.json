@@ -1,0 +1,75 @@
+{
+	"name": "DateDimensionUpdate",
+	"properties": {
+		"folder": {
+			"name": "Dimension Updates"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "Date_Staging",
+						"type": "DatasetReference"
+					},
+					"name": "DateStagingData"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimDate",
+						"type": "DatasetReference"
+					},
+					"name": "DimDate"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "DimDate",
+						"type": "DatasetReference"
+					},
+					"name": "UpdateDimDate"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimDate",
+						"type": "DatasetReference"
+					},
+					"name": "InsertDimDate"
+				}
+			],
+			"transformations": [
+				{
+					"name": "DataSinceLastUpdate"
+				},
+				{
+					"name": "DimNames"
+				},
+				{
+					"name": "LookupAgainstDimTable"
+				},
+				{
+					"name": "ExistingRows"
+				},
+				{
+					"name": "SetToUpdate"
+				},
+				{
+					"name": "UpdateDateColumns"
+				},
+				{
+					"name": "CreateDateColumns"
+				},
+				{
+					"name": "SetIsCurrentToTrue",
+					"description": "SetIsCurrentToTrue"
+				},
+				{
+					"name": "SetIsCurrentToFalse",
+					"description": "SetIsCurrentToFalse"
+				}
+			],
+			"script": "parameters{\n\tLastUpdatedDate as string ('2000-01-01 00:00:00')\n}\nsource(output(\n\t\tDate as date,\n\t\tDay_of_Week as integer,\n\t\tFiscal_Year as integer,\n\t\tMonth_In_Year as integer,\n\t\tWeek_In_Year as integer,\n\t\tPeriod as integer,\n\t\tMonth_In_Period as integer,\n\t\tQuarter as integer,\n\t\tlast_updated as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> DateStagingData\nsource(output(\n\t\tDate_Key as long,\n\t\tDate as date,\n\t\tDay_of_Week as integer,\n\t\tFiscal_Year as integer,\n\t\tMonth_In_Year as integer,\n\t\tWeek_In_Year as integer,\n\t\tPeriod as integer,\n\t\tMonth_In_Period as integer,\n\t\tQuarter as integer,\n\t\tIsCurrent as boolean,\n\t\tDateCreated as timestamp,\n\t\tCalendar_Year as integer,\n\t\tCalendar_Month as integer,\n\t\tCalendar_Week as integer\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> DimDate\nDateStagingData filter(last_updated > toTimestamp($LastUpdatedDate,'yyyy-MM-dd HH:mm:ss')) ~> DataSinceLastUpdate\nDimDate select(mapColumn(\n\t\tDimDate_Key = Date_Key,\n\t\tDimDate = Date,\n\t\tDimDay_of_Week = Day_of_Week,\n\t\tDimFiscal_Year = Fiscal_Year,\n\t\tDimMonth_In_Year = Month_In_Year,\n\t\tDimWeek_In_Year = Week_In_Year,\n\t\tDimPeriod = Period,\n\t\tDimMonth_In_Period = Month_In_Period,\n\t\tDimQuarter = Quarter,\n\t\tDimIsCurrent = IsCurrent,\n\t\tDimDateCreated = DateCreated,\n\t\tDimCalendar_Year = Calendar_Year,\n\t\tDimCalendar_Month = Calendar_Month,\n\t\tDimCalendar_Week = Calendar_Week\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> DimNames\nDataSinceLastUpdate, DimNames lookup(Date == DimDate,\n\tmultiple: true,\n\tbroadcast: 'auto')~> LookupAgainstDimTable\nLookupAgainstDimTable filter(!isNull(DimDate)) ~> ExistingRows\nSetIsCurrentToFalse alterRow(updateIf(1==1)) ~> SetToUpdate\nExistingRows derive(DimCalendar_Year = year(Date),\n\t\tDimCalendar_Month = month(Date),\n\t\tDimCalendar_Week = weekOfYear(Date)) ~> UpdateDateColumns\nDataSinceLastUpdate derive(Calendar_Year = year(Date),\n\t\tCalendar_Month = month(Date),\n\t\tCalendar_Week = weekOfYear(Date)) ~> CreateDateColumns\nCreateDateColumns derive(IsCurrent = true()) ~> SetIsCurrentToTrue\nUpdateDateColumns derive(DimIsCurrent = false()) ~> SetIsCurrentToFalse\nSetToUpdate sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tinput(\n\t\tDate_Key as long,\n\t\tDate as date,\n\t\tDay_of_Week as integer,\n\t\tFiscal_Year as integer,\n\t\tMonth_In_Year as integer,\n\t\tWeek_In_Year as integer,\n\t\tPeriod as integer,\n\t\tMonth_In_Period as integer,\n\t\tQuarter as integer,\n\t\tIsCurrent as boolean,\n\t\tDateCreated as timestamp,\n\t\tCalendar_Year as integer,\n\t\tCalendar_Month as integer,\n\t\tCalendar_Week as integer\n\t),\n\tdeletable:false,\n\tinsertable:false,\n\tupdateable:true,\n\tupsertable:false,\n\tkeys:['Date_Key'],\n\tformat: 'table',\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\tsaveOrder: 0,\n\terrorHandlingOption: 'stopOnFirstError',\n\tmapColumn(\n\t\tDate_Key = DimDate_Key,\n\t\tIsCurrent = DimIsCurrent\n\t)) ~> UpdateDimDate\nSetIsCurrentToTrue sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tinput(\n\t\tDate_Key as long,\n\t\tDate as date,\n\t\tDay_of_Week as integer,\n\t\tFiscal_Year as integer,\n\t\tMonth_In_Year as integer,\n\t\tWeek_In_Year as integer,\n\t\tPeriod as integer,\n\t\tMonth_In_Period as integer,\n\t\tQuarter as integer,\n\t\tIsCurrent as boolean,\n\t\tDateCreated as timestamp,\n\t\tCalendar_Year as integer,\n\t\tCalendar_Month as integer,\n\t\tCalendar_Week as integer\n\t),\n\tdeletable:false,\n\tinsertable:true,\n\tupdateable:false,\n\tupsertable:false,\n\tformat: 'table',\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\terrorHandlingOption: 'stopOnFirstError') ~> InsertDimDate"
+		}
+	}
+}

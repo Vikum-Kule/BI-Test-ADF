@@ -1,0 +1,98 @@
+{
+	"name": "CashTransaction_Staging",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "EnactorDW_Staging",
+			"type": "LinkedServiceReference",
+			"parameters": {
+				"ConnectionStringKey": {
+					"value": "@dataset().ConnectionStringKey",
+					"type": "Expression"
+				},
+				"KeyVault_URL": {
+					"value": "@dataset().KeyVault_URL",
+					"type": "Expression"
+				}
+			}
+		},
+		"parameters": {
+			"ConnectionStringKey": {
+				"type": "string",
+				"defaultValue": "EnactorBI-StagingDB-ConnectionString"
+			},
+			"KeyVault_URL": {
+				"type": "string",
+				"defaultValue": "https://PR-EVAL-BI-Key-Vault.vault.azure.net/"
+			}
+		},
+		"folder": {
+			"name": "Staging/Facts"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [
+			{
+				"name": "Id",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Transaction_Type",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Date_Created_Offset",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "Effective_Date_Offset",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "Location_Id",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Device_Id",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Owner_Id",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Owner_Type",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "User_Id",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Session_Number",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "Effective_Date",
+				"type": "date"
+			},
+			{
+				"name": "Date_Created",
+				"type": "datetime",
+				"precision": 23,
+				"scale": 3
+			},
+			{
+				"name": "Transaction_Id",
+				"type": "nvarchar"
+			}
+		],
+		"typeProperties": {
+			"schema": "dbo",
+			"table": "CashTransaction_Staging"
+		}
+	}
+}

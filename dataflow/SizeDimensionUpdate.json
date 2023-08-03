@@ -1,0 +1,67 @@
+{
+	"name": "SizeDimensionUpdate",
+	"properties": {
+		"folder": {
+			"name": "Dimension Updates"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "Size_Staging",
+						"type": "DatasetReference"
+					},
+					"name": "SizeStagingData"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimSize",
+						"type": "DatasetReference"
+					},
+					"name": "DimSize"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "DimSize",
+						"type": "DatasetReference"
+					},
+					"name": "UpdateDimSize"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimSize",
+						"type": "DatasetReference"
+					},
+					"name": "InsertDimSize"
+				}
+			],
+			"transformations": [
+				{
+					"name": "DataSinceLastUpdate"
+				},
+				{
+					"name": "DimNames"
+				},
+				{
+					"name": "LookupAgainstDimTable"
+				},
+				{
+					"name": "ExistingRows"
+				},
+				{
+					"name": "SetToUpdate"
+				},
+				{
+					"name": "SetIsCurrentToFalse"
+				},
+				{
+					"name": "SetIsCurrentToTrue"
+				}
+			],
+			"script": "parameters{\n\tLastUpdatedDate as string ('2000-01-01 00:00:00')\n}\nsource(output(\n\t\tSize_Id as string,\n\t\tDescription as string,\n\t\tLast_Updated as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> SizeStagingData\nsource(output(\n\t\tSize_Key as long,\n\t\tSize_Id as string,\n\t\tDescription as string,\n\t\tIsCurrent as boolean,\n\t\tDateCreated as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> DimSize\nSizeStagingData filter(Last_Updated > toTimestamp($LastUpdatedDate,'yyyy-MM-dd HH:mm:ss')) ~> DataSinceLastUpdate\nDimSize select(mapColumn(\n\t\tDimSize_Key = Size_Key,\n\t\tDimSize_Id = Size_Id,\n\t\tDimDescription = Description,\n\t\tDimIsCurrent = IsCurrent,\n\t\tDimDateCreated = DateCreated\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> DimNames\nDataSinceLastUpdate, DimNames lookup(Size_Id == DimSize_Id,\n\tmultiple: true,\n\tbroadcast: 'auto')~> LookupAgainstDimTable\nLookupAgainstDimTable filter(!isNull(DimSize_Id)) ~> ExistingRows\nSetIsCurrentToFalse alterRow(updateIf(1==1)) ~> SetToUpdate\nExistingRows derive(DimIsCurrent = false()) ~> SetIsCurrentToFalse\nDataSinceLastUpdate derive(IsCurrent = true()) ~> SetIsCurrentToTrue\nSetToUpdate sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tinput(\n\t\tSize_Key as long,\n\t\tSize_Id as string,\n\t\tDescription as string,\n\t\tIsCurrent as boolean,\n\t\tDateCreated as timestamp\n\t),\n\tdeletable:false,\n\tinsertable:false,\n\tupdateable:true,\n\tupsertable:false,\n\tkeys:['Size_Key'],\n\tformat: 'table',\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\tsaveOrder: 0,\n\terrorHandlingOption: 'stopOnFirstError',\n\tmapColumn(\n\t\tSize_Key = DimSize_Key,\n\t\tIsCurrent = DimIsCurrent\n\t)) ~> UpdateDimSize\nSetIsCurrentToTrue sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tinput(\n\t\tSize_Key as long,\n\t\tSize_Id as string,\n\t\tDescription as string,\n\t\tIsCurrent as boolean,\n\t\tDateCreated as timestamp\n\t),\n\tdeletable:false,\n\tinsertable:true,\n\tupdateable:false,\n\tupsertable:false,\n\tformat: 'table',\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\tsaveOrder: 1,\n\terrorHandlingOption: 'stopOnFirstError',\n\tmapColumn(\n\t\tSize_Id,\n\t\tDescription,\n\t\tIsCurrent\n\t)) ~> InsertDimSize"
+		}
+	}
+}

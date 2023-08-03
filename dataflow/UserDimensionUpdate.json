@@ -1,0 +1,67 @@
+{
+	"name": "UserDimensionUpdate",
+	"properties": {
+		"folder": {
+			"name": "Dimension Updates"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "User_Staging",
+						"type": "DatasetReference"
+					},
+					"name": "UserStagingData"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimUser",
+						"type": "DatasetReference"
+					},
+					"name": "DimUser"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "DimUser",
+						"type": "DatasetReference"
+					},
+					"name": "UpdateDimUser"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimUser",
+						"type": "DatasetReference"
+					},
+					"name": "InsertDimUser"
+				}
+			],
+			"transformations": [
+				{
+					"name": "DataSinceLastUpdate"
+				},
+				{
+					"name": "DimNames"
+				},
+				{
+					"name": "LookupAgainstDimTable"
+				},
+				{
+					"name": "ExistingRows"
+				},
+				{
+					"name": "SetToUpdate"
+				},
+				{
+					"name": "SetIsCurrentToFalse"
+				},
+				{
+					"name": "SetIsCurrentToTrue"
+				}
+			],
+			"script": "parameters{\n\tLastUpdatedDate as string ('2000-01-01 00:00:00')\n}\nsource(output(\n\t\tUser_Id as string,\n\t\tForename as string,\n\t\tSurname as string,\n\t\tFullname as string,\n\t\tlast_updated as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> UserStagingData\nsource(output(\n\t\tUser_Key as long,\n\t\tUser_Id as string,\n\t\tForename as string,\n\t\tSurname as string,\n\t\tFullname as string,\n\t\tIsCurrent as boolean,\n\t\tDateCreated as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> DimUser\nUserStagingData filter(last_updated > toTimestamp($LastUpdatedDate,'yyyy-MM-dd HH:mm:ss')) ~> DataSinceLastUpdate\nDimUser select(mapColumn(\n\t\tDimUser_Key = User_Key,\n\t\tDimUser_Id = User_Id,\n\t\tDimForename = Forename,\n\t\tDimSurname = Surname,\n\t\tDimFullname = Fullname,\n\t\tDimDateCreated = DateCreated\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> DimNames\nDataSinceLastUpdate, DimNames lookup(User_Id == DimUser_Id,\n\tmultiple: true,\n\tbroadcast: 'auto')~> LookupAgainstDimTable\nLookupAgainstDimTable filter(!isNull(DimUser_Id)) ~> ExistingRows\nSetIsCurrentToFalse alterRow(updateIf(1==1)) ~> SetToUpdate\nExistingRows derive(DimIsCurrent = false()) ~> SetIsCurrentToFalse\nDataSinceLastUpdate derive(IsCurrent = true()) ~> SetIsCurrentToTrue\nSetToUpdate sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tinput(\n\t\tUser_Key as long,\n\t\tUser_Id as string,\n\t\tForename as string,\n\t\tSurname as string,\n\t\tFullname as string,\n\t\tIsCurrent as boolean,\n\t\tDateCreated as timestamp\n\t),\n\tdeletable:false,\n\tinsertable:false,\n\tupdateable:true,\n\tupsertable:false,\n\tkeys:['User_Key'],\n\tformat: 'table',\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\tsaveOrder: 0,\n\terrorHandlingOption: 'stopOnFirstError',\n\tmapColumn(\n\t\tUser_Key = DimUser_Key,\n\t\tIsCurrent = DimIsCurrent\n\t)) ~> UpdateDimUser\nSetIsCurrentToTrue sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tinput(\n\t\tUser_Key as long,\n\t\tUser_Id as string,\n\t\tForename as string,\n\t\tSurname as string,\n\t\tFullname as string,\n\t\tIsCurrent as boolean,\n\t\tDateCreated as timestamp\n\t),\n\tdeletable:false,\n\tinsertable:true,\n\tupdateable:false,\n\tupsertable:false,\n\tformat: 'table',\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\terrorHandlingOption: 'stopOnFirstError',\n\tmapColumn(\n\t\tUser_Id,\n\t\tForename,\n\t\tSurname,\n\t\tFullname,\n\t\tIsCurrent\n\t)) ~> InsertDimUser"
+		}
+	}
+}

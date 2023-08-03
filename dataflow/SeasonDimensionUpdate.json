@@ -1,0 +1,68 @@
+{
+	"name": "SeasonDimensionUpdate",
+	"properties": {
+		"folder": {
+			"name": "Dimension Updates"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "Season_Staging",
+						"type": "DatasetReference"
+					},
+					"name": "SeasonStagingData"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimSeason",
+						"type": "DatasetReference"
+					},
+					"name": "DimSeason"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "DimSeason",
+						"type": "DatasetReference"
+					},
+					"name": "UpdateDimSeason",
+					"description": "Export data to DimSeason"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimSeason",
+						"type": "DatasetReference"
+					},
+					"name": "InsertDimSeason"
+				}
+			],
+			"transformations": [
+				{
+					"name": "DataSinceLastUpdate"
+				},
+				{
+					"name": "DimNames"
+				},
+				{
+					"name": "LookupAgainstDimTable"
+				},
+				{
+					"name": "ExistingRows"
+				},
+				{
+					"name": "SetToUpdate"
+				},
+				{
+					"name": "SetIsCurrentToFalse"
+				},
+				{
+					"name": "SetIsCurrentToTrue"
+				}
+			],
+			"script": "parameters{\n\tLastUpdatedDate as string ('2000-01-01 00:00:00')\n}\nsource(output(\n\t\tSeason_Id as string,\n\t\tDescription as string,\n\t\tStart_Date as timestamp,\n\t\tEnd_Date as timestamp,\n\t\tLast_Updated as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> SeasonStagingData\nsource(output(\n\t\tSeason_Key as long,\n\t\tSeason_Id as string,\n\t\tDescription as string,\n\t\tStart_Date as timestamp,\n\t\tEnd_Date as timestamp,\n\t\tLast_Updated as timestamp,\n\t\tIsCurrent as boolean\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> DimSeason\nSeasonStagingData filter(Last_Updated > toTimestamp($LastUpdatedDate,'yyyy-MM-dd HH:mm:ss')) ~> DataSinceLastUpdate\nDimSeason select(mapColumn(\n\t\tDimSeason_Key = Season_Key,\n\t\tDimSeason_Id = Season_Id,\n\t\tDimDescription = Description,\n\t\tDimStart_Date = Start_Date,\n\t\tDimEnd_Date = End_Date,\n\t\tDimLast_Updated = Last_Updated,\n\t\tDimIsCurrent = IsCurrent\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> DimNames\nDataSinceLastUpdate, DimNames lookup(Season_Id == DimSeason_Id,\n\tmultiple: true,\n\tbroadcast: 'auto')~> LookupAgainstDimTable\nLookupAgainstDimTable filter(!isNull(DimSeason_Id)) ~> ExistingRows\nSetIsCurrentToFalse alterRow(updateIf(1==1)) ~> SetToUpdate\nExistingRows derive(DimIs_current = false()) ~> SetIsCurrentToFalse\nDataSinceLastUpdate derive(is_current = true()) ~> SetIsCurrentToTrue\nSetToUpdate sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tinput(\n\t\tSeason_Key as long,\n\t\tSeason_Id as string,\n\t\tDescription as string,\n\t\tStart_Date as timestamp,\n\t\tEnd_Date as timestamp,\n\t\tLast_Updated as timestamp,\n\t\tIsCurrent as boolean\n\t),\n\tdeletable:false,\n\tinsertable:false,\n\tupdateable:true,\n\tupsertable:false,\n\tkeys:['Season_Key'],\n\tformat: 'table',\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\tsaveOrder: 0,\n\terrorHandlingOption: 'stopOnFirstError',\n\tmapColumn(\n\t\tSeason_Key = DimSeason_Key,\n\t\tIsCurrent = DimIsCurrent\n\t)) ~> UpdateDimSeason\nSetIsCurrentToTrue sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tinput(\n\t\tSeason_Key as long,\n\t\tSeason_Id as string,\n\t\tDescription as string,\n\t\tStart_Date as timestamp,\n\t\tEnd_Date as timestamp,\n\t\tLast_Updated as timestamp,\n\t\tIsCurrent as boolean\n\t),\n\tdeletable:false,\n\tinsertable:true,\n\tupdateable:false,\n\tupsertable:false,\n\tformat: 'table',\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\tsaveOrder: 1,\n\terrorHandlingOption: 'stopOnFirstError',\n\tmapColumn(\n\t\tSeason_Id,\n\t\tDescription,\n\t\tStart_Date,\n\t\tEnd_Date,\n\t\tLast_Updated,\n\t\tIsCurrent = is_current\n\t)) ~> InsertDimSeason"
+		}
+	}
+}

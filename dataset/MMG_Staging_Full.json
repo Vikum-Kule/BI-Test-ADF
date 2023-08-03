@@ -1,0 +1,118 @@
+{
+	"name": "MMG_Staging_Full",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "EnactorDW_Staging",
+			"type": "LinkedServiceReference",
+			"parameters": {
+				"ConnectionStringKey": {
+					"value": "@dataset().ConnectionStringKey",
+					"type": "Expression"
+				},
+				"KeyVault_URL": {
+					"value": "@dataset().KeyVault_URL",
+					"type": "Expression"
+				}
+			}
+		},
+		"parameters": {
+			"ConnectionStringKey": {
+				"type": "string",
+				"defaultValue": "EnactorBI-StagingDB-ConnectionString"
+			},
+			"KeyVault_URL": {
+				"type": "string",
+				"defaultValue": "https://PR-EVAL-BI-Key-Vault.vault.azure.net/"
+			}
+		},
+		"folder": {
+			"name": "Staging/Dimensions"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [
+			{
+				"name": "GroupKey",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Group_Id",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Group_Hierarchy_Id",
+				"type": "nvarchar"
+			},
+			{
+				"name": "level",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Level_1_Group_Id",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Level_2_Group_Id",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Level_3_Group_Id",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Level_4_Group_Id",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Level_5_Group_Id",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Level_6_Group_Id",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Level_7_Group_Id",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Level_8_Group_Id",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Level_9_Group_Id",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Level_10_Group_Id",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Name",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Level_1_Name",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Level_2_Name",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Level_3_Name",
+				"type": "nvarchar"
+			},
+			{
+				"name": "last_updated",
+				"type": "datetime",
+				"precision": 23,
+				"scale": 3
+			}
+		],
+		"typeProperties": {
+			"schema": "dbo",
+			"table": "vw_MMG_Staging_Full"
+		}
+	}
+}

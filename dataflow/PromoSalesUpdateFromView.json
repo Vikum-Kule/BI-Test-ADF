@@ -1,0 +1,51 @@
+{
+	"name": "PromoSalesUpdateFromView",
+	"properties": {
+		"folder": {
+			"name": "Fact Updates"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "PromoSales_Staging_Full",
+						"type": "DatasetReference"
+					},
+					"name": "PromoSalesStagingView"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimPromotion",
+						"type": "DatasetReference"
+					},
+					"name": "DimPromotion"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "FactPromoSales",
+						"type": "DatasetReference"
+					},
+					"name": "WriteToFactPromoSalesTable"
+				}
+			],
+			"transformations": [
+				{
+					"name": "DataSinceLastUpdate"
+				},
+				{
+					"name": "LookupPromotion"
+				},
+				{
+					"name": "SelectColumns"
+				},
+				{
+					"name": "DimPromotionCurrent"
+				}
+			],
+			"script": "parameters{\n\tLastUpdatedDate as string ('2000-01-01 00:00:00')\n}\nsource(output(\n\t\ttransaction_Id as string,\n\t\tline_number as integer,\n\t\ttrigger_number as integer,\n\t\tpromotion_id as string,\n\t\tenactor_promotion_key as string,\n\t\treward_type as string,\n\t\treward_value as decimal(17,6),\n\t\tdistributed_reward_value as decimal(17,6),\n\t\tpromo_trigger_quantity as double,\n\t\tlast_updated as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> PromoSalesStagingView\nsource(output(\n\t\tPromotion_Key as long,\n\t\tEnactorPromotionKey as string,\n\t\tPromotion_id as string,\n\t\tRegionKey as string,\n\t\tDescription as string,\n\t\tStart_Date as timestamp,\n\t\tEnd_Date as timestamp,\n\t\tIsCurrent as boolean,\n\t\tDateCreated as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> DimPromotion\nPromoSalesStagingView filter(last_updated > toTimestamp($LastUpdatedDate,'yyyy-MM-dd HH:mm:ss')) ~> DataSinceLastUpdate\nDataSinceLastUpdate, DimPromotionCurrent lookup(enactor_promotion_key == EnactorPromotionKey,\n\tmultiple: false,\n\tpickup: 'any',\n\tbroadcast: 'auto')~> LookupPromotion\nLookupPromotion select(mapColumn(\n\t\ttransaction_Id,\n\t\tline_number,\n\t\ttrigger_number,\n\t\tpromotion_id = PromoSalesStagingView@promotion_id,\n\t\tenactor_promotion_key,\n\t\treward_type,\n\t\treward_value,\n\t\tdistributed_reward_value,\n\t\tpromo_trigger_quantity,\n\t\tlast_updated,\n\t\tPromotion_Key,\n\t\tEnactorPromotionKey,\n\t\tPromotion_id = DimPromotion@Promotion_id,\n\t\tRegionKey,\n\t\tDescription,\n\t\tStart_Date,\n\t\tEnd_Date,\n\t\tIsCurrent,\n\t\tDateCreated\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> SelectColumns\nDimPromotion filter(IsCurrent==true()) ~> DimPromotionCurrent\nSelectColumns sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tinput(\n\t\ttransaction_id as string,\n\t\tline_number as integer,\n\t\ttrigger_number as integer,\n\t\tpromotion_Key as long,\n\t\treward_type as string,\n\t\treward_value as decimal(17,6),\n\t\tdistributed_reward_value as decimal(17,6),\n\t\tpromo_trigger_quantity as double,\n\t\tDateCreated as timestamp\n\t),\n\tdeletable:false,\n\tinsertable:true,\n\tupdateable:false,\n\tupsertable:false,\n\tformat: 'table',\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\terrorHandlingOption: 'stopOnFirstError',\n\tmapColumn(\n\t\ttransaction_id = transaction_Id,\n\t\tline_number,\n\t\ttrigger_number,\n\t\tpromotion_Key = Promotion_Key,\n\t\treward_type,\n\t\treward_value,\n\t\tdistributed_reward_value,\n\t\tpromo_trigger_quantity\n\t)) ~> WriteToFactPromoSalesTable"
+		}
+	}
+}

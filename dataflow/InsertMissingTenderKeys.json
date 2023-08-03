@@ -1,0 +1,146 @@
+{
+	"name": "InsertMissingTenderKeys",
+	"properties": {
+		"folder": {
+			"name": "Dimension Updates"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "CashTansaction_Staging_Full",
+						"type": "DatasetReference"
+					},
+					"name": "CashTransactionStagingFull",
+					"description": "Import data from CashTransactionStagingFull"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimTender",
+						"type": "DatasetReference"
+					},
+					"name": "DimTender"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "DimTender",
+						"type": "DatasetReference"
+					},
+					"name": "InsertDimTender"
+				}
+			],
+			"transformations": [
+				{
+					"name": "DataSinceLastUpdated"
+				},
+				{
+					"name": "GroupByTenderId",
+					"description": "Aggregating data by 'TenderId' producing columns 'RecordCount'"
+				},
+				{
+					"name": "LookupAgainstDimTender"
+				},
+				{
+					"name": "TenderIdNotFoundInDimTender"
+				},
+				{
+					"name": "RenameColumns"
+				},
+				{
+					"name": "DefaultColumns"
+				}
+			],
+			"scriptLines": [
+				"parameters{",
+				"     LastUpdatedDate as string ('2000-01-01 00:00:00')",
+				"}",
+				"source(output(",
+				"          Transaction_Type as string,",
+				"          Device_Id as string,",
+				"          Location_Id as string,",
+				"          Owner_Id as string,",
+				"          Owner_Type as integer,",
+				"          Session_Number as integer,",
+				"          User_Id as string,",
+				"          Transaction_Id as string,",
+				"          Item_Index as integer,",
+				"          Item_Type as string,",
+				"          Tender_Id as string,",
+				"          Value as long,",
+				"          Date_Created as timestamp,",
+				"          Date_Created_Offset as integer,",
+				"          Effective_Date as timestamp,",
+				"          Effective_Date_Offset as integer",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> CashTransactionStagingFull",
+				"source(output(",
+				"          Tender_Key as long,",
+				"          tender_id as string,",
+				"          Tender_type as string,",
+				"          Description as string,",
+				"          RegionKey as string,",
+				"          IsCurrent as boolean,",
+				"          DateCreated as timestamp",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> DimTender",
+				"CashTransactionStagingFull filter(Effective_Date > toTimestamp($LastUpdatedDate,'yyyy-MM-dd HH:mm:ss')) ~> DataSinceLastUpdated",
+				"DataSinceLastUpdated aggregate(groupBy(Tender_Id),",
+				"     RecordCount = count(1)) ~> GroupByTenderId",
+				"GroupByTenderId, RenameColumns lookup(Tender_Id == DimTender_id,",
+				"     multiple: false,",
+				"     pickup: 'any',",
+				"     broadcast: 'auto')~> LookupAgainstDimTender",
+				"LookupAgainstDimTender filter(isNull(DimTender_id)) ~> TenderIdNotFoundInDimTender",
+				"DimTender select(mapColumn(",
+				"          DimTender_Key = Tender_Key,",
+				"          DimTender_id = tender_id,",
+				"          DimTender_type = Tender_type,",
+				"          DimDescription = Description,",
+				"          DimRegionKey = RegionKey,",
+				"          DimIsCurrent = IsCurrent,",
+				"          DimDateCreated = DateCreated",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> RenameColumns",
+				"TenderIdNotFoundInDimTender derive(Tender_type = 'unk',",
+				"          Description = 'unk',",
+				"          RegionKey = 'unk',",
+				"          IsCurrent = toBoolean('true')) ~> DefaultColumns",
+				"DefaultColumns sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          Tender_Key as long,",
+				"          tender_id as string,",
+				"          Tender_type as string,",
+				"          Description as string,",
+				"          RegionKey as string,",
+				"          IsCurrent as boolean,",
+				"          DateCreated as timestamp",
+				"     ),",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     format: 'table',",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError',",
+				"     mapColumn(",
+				"          tender_id = Tender_Id,",
+				"          Tender_type,",
+				"          Description,",
+				"          RegionKey,",
+				"          IsCurrent",
+				"     )) ~> InsertDimTender"
+			]
+		}
+	}
+}

@@ -1,0 +1,67 @@
+{
+	"name": "SupplierDimensionUpdate",
+	"properties": {
+		"folder": {
+			"name": "Dimension Updates"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "Supplier_Staging",
+						"type": "DatasetReference"
+					},
+					"name": "SupplierStagingData"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimSupplier",
+						"type": "DatasetReference"
+					},
+					"name": "DimSupplier"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "DimSupplier",
+						"type": "DatasetReference"
+					},
+					"name": "UpdateDimSupplier"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimSupplier",
+						"type": "DatasetReference"
+					},
+					"name": "InsertDimSupplier"
+				}
+			],
+			"transformations": [
+				{
+					"name": "DataSinceLastUpdate"
+				},
+				{
+					"name": "DimNames"
+				},
+				{
+					"name": "LookupAgainstDimTable"
+				},
+				{
+					"name": "ExistingRows"
+				},
+				{
+					"name": "SetToUpdate"
+				},
+				{
+					"name": "SetIsCurrentToFalse"
+				},
+				{
+					"name": "SetIsCurrentToTrue"
+				}
+			],
+			"script": "parameters{\n\tLastUpdatedDate as string ('2000-01-01 00:00:00')\n}\nsource(output(\n\t\tsupplier_id as string,\n\t\tname as string,\n\t\tstatus as string,\n\t\tlast_updated as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> SupplierStagingData\nsource(output(\n\t\tsupplier_key as long,\n\t\tsupplier_id as string,\n\t\tname as string,\n\t\tstatus as string,\n\t\tis_current as boolean,\n\t\tdate_created as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> DimSupplier\nSupplierStagingData filter(last_updated > toTimestamp($LastUpdatedDate,'yyyy-MM-dd HH:mm:ss')) ~> DataSinceLastUpdate\nDimSupplier select(mapColumn(\n\t\tDimSupplier_Key = supplier_key,\n\t\tDimSupplier_id = supplier_id,\n\t\tDimName = name,\n\t\tDimStatus = status,\n\t\tDimIs_current = is_current,\n\t\tDimDate_created = date_created\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> DimNames\nDataSinceLastUpdate, DimNames lookup(supplier_id == DimSupplier_id,\n\tmultiple: true,\n\tbroadcast: 'auto')~> LookupAgainstDimTable\nLookupAgainstDimTable filter(!isNull(DimSupplier_id)) ~> ExistingRows\nSetIsCurrentToFalse alterRow(updateIf(1==1)) ~> SetToUpdate\nExistingRows derive(DimIs_current = false()) ~> SetIsCurrentToFalse\nDataSinceLastUpdate derive(is_current = true()) ~> SetIsCurrentToTrue\nSetToUpdate sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tinput(\n\t\tsupplier_key as long,\n\t\tsupplier_id as string,\n\t\tname as string,\n\t\tstatus as string,\n\t\tis_current as boolean,\n\t\tdate_created as timestamp\n\t),\n\tdeletable:false,\n\tinsertable:false,\n\tupdateable:true,\n\tupsertable:false,\n\tkeys:['supplier_key'],\n\tformat: 'table',\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\tsaveOrder: 0,\n\terrorHandlingOption: 'stopOnFirstError',\n\tmapColumn(\n\t\tis_current = DimIs_current,\n\t\tsupplier_key = DimSupplier_Key\n\t)) ~> UpdateDimSupplier\nSetIsCurrentToTrue sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tinput(\n\t\tsupplier_key as long,\n\t\tsupplier_id as string,\n\t\tname as string,\n\t\tstatus as string,\n\t\tis_current as boolean,\n\t\tdate_created as timestamp\n\t),\n\tdeletable:false,\n\tinsertable:true,\n\tupdateable:false,\n\tupsertable:false,\n\tformat: 'table',\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\tsaveOrder: 1,\n\terrorHandlingOption: 'stopOnFirstError') ~> InsertDimSupplier"
+		}
+	}
+}

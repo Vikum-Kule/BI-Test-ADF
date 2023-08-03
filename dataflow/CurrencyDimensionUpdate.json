@@ -1,0 +1,67 @@
+{
+	"name": "CurrencyDimensionUpdate",
+	"properties": {
+		"folder": {
+			"name": "Dimension Updates"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "Currency_Staging",
+						"type": "DatasetReference"
+					},
+					"name": "CurrencyStagingData"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimCurrency",
+						"type": "DatasetReference"
+					},
+					"name": "DimCurrency"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "DimCurrency",
+						"type": "DatasetReference"
+					},
+					"name": "UpdateDimCurrency"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimCurrency",
+						"type": "DatasetReference"
+					},
+					"name": "InsertDimCurrency"
+				}
+			],
+			"transformations": [
+				{
+					"name": "DataSinceLastUpdate"
+				},
+				{
+					"name": "DimNames"
+				},
+				{
+					"name": "LookupAgainstDimTable"
+				},
+				{
+					"name": "ExistingRows"
+				},
+				{
+					"name": "SetToUpdate"
+				},
+				{
+					"name": "SetIsCurrentToFalse"
+				},
+				{
+					"name": "SetIsCurrentToTrue"
+				}
+			],
+			"script": "parameters{\n\tLastUpdatedDate as string ('2000-01-01 00:00:00')\n}\nsource(output(\n\t\tCurrency_Id as string,\n\t\tDescription as string,\n\t\tlast_updated as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> CurrencyStagingData\nsource(output(\n\t\tCurrency_Key as long,\n\t\tCurrency_Id as string,\n\t\tDescription as string,\n\t\tIsCurrent as boolean,\n\t\tDateCreated as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> DimCurrency\nCurrencyStagingData filter(last_updated > toTimestamp($LastUpdatedDate,'yyyy-MM-dd HH:mm:ss')) ~> DataSinceLastUpdate\nDimCurrency select(mapColumn(\n\t\tDimCurrency_Key = Currency_Key,\n\t\tDimCurrency_Id = Currency_Id,\n\t\tDimDescription = Description,\n\t\tDimIsCurrent = IsCurrent,\n\t\tDimDateCreated = DateCreated\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> DimNames\nDataSinceLastUpdate, DimNames lookup(Currency_Id == DimCurrency_Id,\n\tmultiple: true,\n\tbroadcast: 'auto')~> LookupAgainstDimTable\nLookupAgainstDimTable filter(!isNull(DimCurrency_Id)) ~> ExistingRows\nSetIsCurrentToFalse alterRow(updateIf(1==1)) ~> SetToUpdate\nExistingRows derive(DimIsCurrent = false()) ~> SetIsCurrentToFalse\nDataSinceLastUpdate derive(IsCurrent = true()) ~> SetIsCurrentToTrue\nSetToUpdate sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tinput(\n\t\tCurrency_Key as long,\n\t\tCurrency_Id as string,\n\t\tDescription as string,\n\t\tIsCurrent as boolean,\n\t\tDateCreated as timestamp\n\t),\n\tdeletable:false,\n\tinsertable:false,\n\tupdateable:true,\n\tupsertable:false,\n\tkeys:['Currency_Key'],\n\tformat: 'table',\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\tsaveOrder: 0,\n\terrorHandlingOption: 'stopOnFirstError',\n\tmapColumn(\n\t\tCurrency_Key = DimCurrency_Key,\n\t\tIsCurrent = DimIsCurrent\n\t)) ~> UpdateDimCurrency\nSetIsCurrentToTrue sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tinput(\n\t\tCurrency_Key as long,\n\t\tCurrency_Id as string,\n\t\tDescription as string,\n\t\tIsCurrent as boolean,\n\t\tDateCreated as timestamp\n\t),\n\tdeletable:false,\n\tinsertable:true,\n\tupdateable:false,\n\tupsertable:false,\n\tformat: 'table',\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\tsaveOrder: 1,\n\terrorHandlingOption: 'stopOnFirstError',\n\tmapColumn(\n\t\tCurrency_Id,\n\t\tDescription,\n\t\tIsCurrent\n\t)) ~> InsertDimCurrency"
+		}
+	}
+}

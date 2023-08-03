@@ -1,0 +1,75 @@
+{
+	"name": "AccountBalanceUpdates_Staging",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "EnactorDW_Staging",
+			"type": "LinkedServiceReference",
+			"parameters": {
+				"ConnectionStringKey": {
+					"value": "@dataset().ConnectionStringKey",
+					"type": "Expression"
+				},
+				"KeyVault_URL": {
+					"value": "@dataset().KeyVault_URL",
+					"type": "Expression"
+				}
+			}
+		},
+		"parameters": {
+			"ConnectionStringKey": {
+				"type": "string",
+				"defaultValue": "EnactorBI-StagingDB-ConnectionString"
+			},
+			"KeyVault_URL": {
+				"type": "string",
+				"defaultValue": "https://PR-EVAL-BI-Key-Vault.vault.azure.net/"
+			}
+		},
+		"folder": {
+			"name": "Staging/Facts"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [
+			{
+				"name": "transaction_Id",
+				"type": "nvarchar"
+			},
+			{
+				"name": "application_Id",
+				"type": "nvarchar"
+			},
+			{
+				"name": "account_id",
+				"type": "nvarchar"
+			},
+			{
+				"name": "update_amount",
+				"type": "bigint",
+				"precision": 19
+			},
+			{
+				"name": "customer_number",
+				"type": "nvarchar"
+			},
+			{
+				"name": "loyalty_scheme_id",
+				"type": "nvarchar"
+			},
+			{
+				"name": "tier_code",
+				"type": "nvarchar"
+			},
+			{
+				"name": "last_updated",
+				"type": "datetime",
+				"precision": 23,
+				"scale": 3
+			}
+		],
+		"typeProperties": {
+			"schema": "dbo",
+			"table": "AccountBalanceUpdates_Staging"
+		}
+	}
+}

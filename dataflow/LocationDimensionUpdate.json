@@ -1,0 +1,67 @@
+{
+	"name": "LocationDimensionUpdate",
+	"properties": {
+		"folder": {
+			"name": "Dimension Updates"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "Location_Staging",
+						"type": "DatasetReference"
+					},
+					"name": "LocationStagingData"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimLocation",
+						"type": "DatasetReference"
+					},
+					"name": "DimLocation"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "DimLocation",
+						"type": "DatasetReference"
+					},
+					"name": "UpdateDimLocation"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimLocation",
+						"type": "DatasetReference"
+					},
+					"name": "InsertDimLocation"
+				}
+			],
+			"transformations": [
+				{
+					"name": "DataSinceLastUpdate"
+				},
+				{
+					"name": "DimNames"
+				},
+				{
+					"name": "LookupAgainstDimTable"
+				},
+				{
+					"name": "ExistingRows"
+				},
+				{
+					"name": "SetToUpdate"
+				},
+				{
+					"name": "SetIsCurrentToFalse"
+				},
+				{
+					"name": "SetIsCurrentToTrue"
+				}
+			],
+			"script": "parameters{\n\tLastUpdatedDate as string ('2000-01-01 00:00:00')\n}\nsource(output(\n\t\tlocation_id as string,\n\t\tlocation_type as string,\n\t\tDescription as string,\n\t\tStreet1 as string,\n\t\tStreet2 as string,\n\t\tTown as string,\n\t\tCountryCode as string,\n\t\tCountryDescription as string,\n\t\tRegion1 as string,\n\t\tRegion1Name as string,\n\t\tRegion2 as string,\n\t\tRegion2Name as string,\n\t\tRegion3 as string,\n\t\tRegion3Name as string,\n\t\tlast_updated as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> LocationStagingData\nsource(output(\n\t\tLocation_Key as long,\n\t\tlocation_id as string,\n\t\tDescription as string,\n\t\tTown as string,\n\t\tCountryCode as string,\n\t\tCountryDescription as string,\n\t\tRegion1 as string,\n\t\tRegion1Name as string,\n\t\tRegion2 as string,\n\t\tRegion2Name as string,\n\t\tRegion3 as string,\n\t\tRegion3Name as string,\n\t\tIsCurrent as boolean,\n\t\tDateCreated as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> DimLocation\nLocationStagingData filter(last_updated > toTimestamp($LastUpdatedDate,'yyyy-MM-dd HH:mm:ss')) ~> DataSinceLastUpdate\nDimLocation select(mapColumn(\n\t\tDimLocation_Key = Location_Key,\n\t\tDimlocation_id = location_id,\n\t\tDimDescription = Description,\n\t\tDimTown = Town,\n\t\tDimCountryCode = CountryCode,\n\t\tDimCountryDescription = CountryDescription,\n\t\tDimRegion1 = Region1,\n\t\tDimRegion1Name = Region1Name,\n\t\tDimRegion2 = Region2,\n\t\tDimRegion2Name = Region2Name,\n\t\tDimRegion3 = Region3,\n\t\tDimRegion3Name = Region3Name,\n\t\tDimIsCurrent = IsCurrent,\n\t\tDimDateCreated = DateCreated\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> DimNames\nDataSinceLastUpdate, DimNames lookup(location_id == Dimlocation_id,\n\tmultiple: true,\n\tbroadcast: 'auto')~> LookupAgainstDimTable\nLookupAgainstDimTable filter(!isNull(Dimlocation_id)) ~> ExistingRows\nSetIsCurrentToFalse alterRow(updateIf(1==1)) ~> SetToUpdate\nExistingRows derive(DimIsCurrent = false()) ~> SetIsCurrentToFalse\nDataSinceLastUpdate derive(IsCurrent = true()) ~> SetIsCurrentToTrue\nSetToUpdate sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tinput(\n\t\tLocation_Key as long,\n\t\tlocation_id as string,\n\t\tDescription as string,\n\t\tTown as string,\n\t\tCountryCode as string,\n\t\tCountryDescription as string,\n\t\tRegion1 as string,\n\t\tRegion1Name as string,\n\t\tRegion2 as string,\n\t\tRegion2Name as string,\n\t\tRegion3 as string,\n\t\tRegion3Name as string,\n\t\tlocation_type as string,\n\t\tIsCurrent as boolean,\n\t\tDateCreated as timestamp\n\t),\n\tdeletable:false,\n\tinsertable:false,\n\tupdateable:true,\n\tupsertable:false,\n\tkeys:['Location_Key'],\n\tformat: 'table',\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\tsaveOrder: 0,\n\terrorHandlingOption: 'stopOnFirstError',\n\tmapColumn(\n\t\tIsCurrent = DimIsCurrent,\n\t\tLocation_Key = DimLocation_Key\n\t)) ~> UpdateDimLocation\nSetIsCurrentToTrue sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tinput(\n\t\tLocation_Key as long,\n\t\tlocation_id as string,\n\t\tDescription as string,\n\t\tTown as string,\n\t\tCountryCode as string,\n\t\tCountryDescription as string,\n\t\tRegion1 as string,\n\t\tRegion1Name as string,\n\t\tRegion2 as string,\n\t\tRegion2Name as string,\n\t\tRegion3 as string,\n\t\tRegion3Name as string,\n\t\tlocation_type as string,\n\t\tIsCurrent as boolean,\n\t\tDateCreated as timestamp\n\t),\n\tdeletable:false,\n\tinsertable:true,\n\tupdateable:false,\n\tupsertable:false,\n\tformat: 'table',\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\tsaveOrder: 1,\n\terrorHandlingOption: 'stopOnFirstError') ~> InsertDimLocation"
+		}
+	}
+}

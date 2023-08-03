@@ -1,0 +1,110 @@
+{
+	"name": "DimDate",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "EnactorDW",
+			"type": "LinkedServiceReference",
+			"parameters": {
+				"ConnectionStringKey": {
+					"value": "@dataset().ConnectionStringKey",
+					"type": "Expression"
+				},
+				"KeyVault_URL": {
+					"value": "@dataset().KeyVault_URL",
+					"type": "Expression"
+				}
+			}
+		},
+		"parameters": {
+			"ConnectionStringKey": {
+				"type": "string",
+				"defaultValue": "EnactorBI-DataWarehouseDB-ConnectionString"
+			},
+			"KeyVault_URL": {
+				"type": "string",
+				"defaultValue": "https://PR-EVAL-BI-Key-Vault.vault.azure.net/"
+			}
+		},
+		"folder": {
+			"name": "Dimensions"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [
+			{
+				"name": "Date_Key",
+				"type": "bigint",
+				"precision": 19
+			},
+			{
+				"name": "Date",
+				"type": "date"
+			},
+			{
+				"name": "Day_of_Week",
+				"type": "smallint",
+				"precision": 5
+			},
+			{
+				"name": "Fiscal_Year",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "Month_In_Year",
+				"type": "smallint",
+				"precision": 5
+			},
+			{
+				"name": "Week_In_Year",
+				"type": "smallint",
+				"precision": 5
+			},
+			{
+				"name": "Period",
+				"type": "smallint",
+				"precision": 5
+			},
+			{
+				"name": "Month_In_Period",
+				"type": "smallint",
+				"precision": 5
+			},
+			{
+				"name": "Quarter",
+				"type": "smallint",
+				"precision": 5
+			},
+			{
+				"name": "IsCurrent",
+				"type": "bit"
+			},
+			{
+				"name": "DateCreated",
+				"type": "datetime",
+				"precision": 23,
+				"scale": 3
+			},
+			{
+				"name": "Calendar_Year",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "Calendar_Month",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "Calendar_Week",
+				"type": "int",
+				"precision": 10
+			}
+		],
+		"typeProperties": {
+			"schema": "dbo",
+			"table": "DimDate"
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

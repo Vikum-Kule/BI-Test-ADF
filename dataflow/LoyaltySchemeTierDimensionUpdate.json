@@ -1,0 +1,67 @@
+{
+	"name": "LoyaltySchemeTierDimensionUpdate",
+	"properties": {
+		"folder": {
+			"name": "Dimension Updates"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "LoyaltySchemeTier_Staging",
+						"type": "DatasetReference"
+					},
+					"name": "LoyaltySchemeTierStagingData"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimLoyaltySchemeTier",
+						"type": "DatasetReference"
+					},
+					"name": "DimLoyaltySchemeTier"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "DimLoyaltySchemeTier",
+						"type": "DatasetReference"
+					},
+					"name": "UpdateDimLoyaltySchemeTier"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimLoyaltySchemeTier",
+						"type": "DatasetReference"
+					},
+					"name": "InsertDimLoyaltySchemeTier"
+				}
+			],
+			"transformations": [
+				{
+					"name": "DataSinceLastUpdate"
+				},
+				{
+					"name": "DimNames"
+				},
+				{
+					"name": "LookupAgainstDimTable"
+				},
+				{
+					"name": "ExistingRows"
+				},
+				{
+					"name": "SetToUpdate"
+				},
+				{
+					"name": "SetIsCurrentToFalse"
+				},
+				{
+					"name": "SetIsCurrentToTrue"
+				}
+			],
+			"script": "parameters{\n\tLastUpdatedDate as string ('2000-01-01 00:00:00')\n}\nsource(output(\n\t\tLoyaltySchemeTier as string,\n\t\tLoyaltyScheme_Id as string,\n\t\tLoyaltySchemeDescription as string,\n\t\tTier_Id as string,\n\t\tTierDescription as string,\n\t\tlast_updated as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> LoyaltySchemeTierStagingData\nsource(output(\n\t\tLoyaltySchemeTier_Key as long,\n\t\tLoyaltySchemeTier as string,\n\t\tLoyaltyScheme_Id as string,\n\t\tLoyaltySchemeDescription as string,\n\t\tTier_Id as string,\n\t\tTierDescription as string,\n\t\tIsCurrent as boolean,\n\t\tDateCreated as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> DimLoyaltySchemeTier\nLoyaltySchemeTierStagingData filter(last_updated > toTimestamp($LastUpdatedDate,'yyyy-MM-dd HH:mm:ss')) ~> DataSinceLastUpdate\nDimLoyaltySchemeTier select(mapColumn(\n\t\tDimLoyaltySchemeTier_Key = LoyaltySchemeTier_Key,\n\t\tDimLoyaltySchemeTier = LoyaltySchemeTier,\n\t\tDimLoyaltyScheme_Id = LoyaltyScheme_Id,\n\t\tDimLoyaltySchemeDescription = LoyaltySchemeDescription,\n\t\tDimTier_Id = Tier_Id,\n\t\tDimTierDescription = TierDescription,\n\t\tDimIsCurrent = IsCurrent,\n\t\tDimDateCreated = DateCreated\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> DimNames\nDataSinceLastUpdate, DimNames lookup(LoyaltySchemeTier == DimLoyaltySchemeTier,\n\tmultiple: true,\n\tbroadcast: 'auto')~> LookupAgainstDimTable\nLookupAgainstDimTable filter(!isNull(DimLoyaltySchemeTier)) ~> ExistingRows\nSetIsCurrentToFalse alterRow(updateIf(1==1)) ~> SetToUpdate\nExistingRows derive(DimIsCurrent = false()) ~> SetIsCurrentToFalse\nDataSinceLastUpdate derive(IsCurrent = true()) ~> SetIsCurrentToTrue\nSetToUpdate sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tinput(\n\t\tLoyaltySchemeTier_Key as long,\n\t\tLoyaltySchemeTier as string,\n\t\tLoyaltyScheme_Id as string,\n\t\tLoyaltySchemeDescription as string,\n\t\tTier_Id as string,\n\t\tTierDescription as string,\n\t\tIsCurrent as boolean,\n\t\tDateCreated as timestamp\n\t),\n\tdeletable:false,\n\tinsertable:false,\n\tupdateable:true,\n\tupsertable:false,\n\tkeys:['LoyaltySchemeTier_Key'],\n\tformat: 'table',\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\tsaveOrder: 0,\n\terrorHandlingOption: 'stopOnFirstError',\n\tmapColumn(\n\t\tLoyaltySchemeTier_Key = DimLoyaltySchemeTier_Key,\n\t\tIsCurrent = DimIsCurrent\n\t)) ~> UpdateDimLoyaltySchemeTier\nSetIsCurrentToTrue sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tinput(\n\t\tLoyaltySchemeTier_Key as long,\n\t\tLoyaltySchemeTier as string,\n\t\tLoyaltyScheme_Id as string,\n\t\tLoyaltySchemeDescription as string,\n\t\tTier_Id as string,\n\t\tTierDescription as string,\n\t\tIsCurrent as boolean,\n\t\tDateCreated as timestamp\n\t),\n\tdeletable:false,\n\tinsertable:true,\n\tupdateable:false,\n\tupsertable:false,\n\tformat: 'table',\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\terrorHandlingOption: 'stopOnFirstError',\n\tmapColumn(\n\t\tLoyaltySchemeTier,\n\t\tLoyaltyScheme_Id,\n\t\tLoyaltySchemeDescription,\n\t\tTier_Id,\n\t\tTierDescription,\n\t\tIsCurrent\n\t)) ~> InsertDimLoyaltySchemeTier"
+		}
+	}
+}

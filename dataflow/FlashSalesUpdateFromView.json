@@ -1,0 +1,142 @@
+{
+	"name": "FlashSalesUpdateFromView",
+	"properties": {
+		"folder": {
+			"name": "Fact Updates"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "FlashSales_Staging_Full",
+						"type": "DatasetReference"
+					},
+					"name": "FlashSalesStagingFull"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimLocation",
+						"type": "DatasetReference"
+					},
+					"name": "DimLocation"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimMMG",
+						"type": "DatasetReference"
+					},
+					"name": "DimMMG"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimUser",
+						"type": "DatasetReference"
+					},
+					"name": "DimSalesperson"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimHour",
+						"type": "DatasetReference"
+					},
+					"name": "DimHour"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimDate",
+						"type": "DatasetReference"
+					},
+					"name": "DimDate"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimCurrency",
+						"type": "DatasetReference"
+					},
+					"name": "DimCurrency"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimTender",
+						"type": "DatasetReference"
+					},
+					"name": "DimTender"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimPromotion",
+						"type": "DatasetReference"
+					},
+					"name": "DimPromotion"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "FactFlashSales",
+						"type": "DatasetReference"
+					},
+					"name": "WriteToFactFlashSalesTable"
+				}
+			],
+			"transformations": [
+				{
+					"name": "DataSinceLastUpdate"
+				},
+				{
+					"name": "LookupLocation"
+				},
+				{
+					"name": "LookupMMG"
+				},
+				{
+					"name": "SelectColumns"
+				},
+				{
+					"name": "DimLocationCurrent"
+				},
+				{
+					"name": "DimMMGCurrent"
+				},
+				{
+					"name": "LookupSalesperson"
+				},
+				{
+					"name": "DimSalespersonCurrent"
+				},
+				{
+					"name": "LookupHour"
+				},
+				{
+					"name": "UpdateNullValues"
+				},
+				{
+					"name": "DimDateCurrent"
+				},
+				{
+					"name": "LookupDate"
+				},
+				{
+					"name": "DimCurrencyCurrent"
+				},
+				{
+					"name": "DimTenderCurrent"
+				},
+				{
+					"name": "LookupTender"
+				},
+				{
+					"name": "LookupCurrency"
+				},
+				{
+					"name": "DimPromotionCurrent"
+				},
+				{
+					"name": "LookupPromotion"
+				}
+			],
+			"script": "parameters{\n\tLastUpdatedDate as string ('2000-01-01 00:00:00')\n}\nsource(output(\n\t\ttransaction_id as string,\n\t\ttransaction_number as long,\n\t\tterminal_number as long,\n\t\tdevice_id as string,\n\t\tlocation_id as string,\n\t\tapplication_id as string,\n\t\tbase_currency_id as string,\n\t\tcompleted_date_time as timestamp,\n\t\ttradedate as date,\n\t\ttrading_day as integer,\n\t\ttrading_year as integer,\n\t\tline_number as integer,\n\t\tproduct_id as string,\n\t\tMMGroupKey as string,\n\t\tBrandKey as string,\n\t\tSalesperson as string,\n\t\tUser_id as string,\n\t\tSalesValueLocal as decimal(17,6),\n\t\tOrderValueLocal as decimal(17,6),\n\t\tReturnsValueLocal as decimal(17,6),\n\t\tPromoValueLocal as decimal(17,6),\n\t\tVoidedValueLocal as integer,\n\t\tManualDiscValueLocal as decimal(17,6),\n\t\ttax_value_local as decimal(17,6),\n\t\tPriceOverridesValueLocal as decimal(17,6),\n\t\tSalesValueHome as decimal(35,12),\n\t\tOrderValueHome as decimal(35,12),\n\t\tReturnsValueHome as decimal(35,12),\n\t\tPromoValueHome as decimal(35,12),\n\t\tVoidedValueHome as decimal(28,6),\n\t\tManualDiscValueHome as decimal(35,12),\n\t\tPriceOverridesValueHome as decimal(35,12),\n\t\ttax_value_home as decimal(35,12),\n\t\tTotalCostValueHome as decimal(17,6),\n\t\texchange_rate as decimal(17,6),\n\t\tSales_Quantity as double,\n\t\tOrders_Quantity as double,\n\t\tReturns_Quantity as double,\n\t\tVoided_Quantity as integer,\n\t\titem_voided as boolean,\n\t\ttransaction_voided as boolean,\n\t\tvoid_reason_code as string,\n\t\tmain_tender_id as string,\n\t\tmain_tender_regionKey as string,\n\t\tmain_tender_currency_id as string,\n\t\tmain_tender_base_value as decimal(17,6),\n\t\tmain_tender_value as decimal(17,6),\n\t\tmain_promotion_id as string,\n\t\tmain_promotion_regionKey as string,\n\t\tmain_reward_value as decimal(17,6),\n\t\tmain_distributed_reward_value as decimal(17,6),\n\t\tmain_promotion_quantity as double,\n\t\tlast_updated as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> FlashSalesStagingFull\nsource(output(\n\t\tLocation_Key as long,\n\t\tlocation_id as string,\n\t\tDescription as string,\n\t\tTown as string,\n\t\tCountryCode as string,\n\t\tCountry as string,\n\t\tIsCurrent as boolean,\n\t\tDateCreated as timestamp,\n\t\tLocationSurrogateKey as long\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> DimLocation\nsource(output(\n\t\tMMG_Key as long,\n\t\tGroupKey as string,\n\t\tGroup_Id as string,\n\t\tGroup_Hierarchy_Id as string,\n\t\tlevel as string,\n\t\tLevel_1_Group_Id as string,\n\t\tLevel_2_Group_Id as string,\n\t\tLevel_3_Group_Id as string,\n\t\tLevel_4_Group_Id as string,\n\t\tLevel_5_Group_Id as string,\n\t\tLevel_6_Group_Id as string,\n\t\tLevel_7_Group_Id as string,\n\t\tLevel_8_Group_Id as string,\n\t\tLevel_9_Group_Id as string,\n\t\tLevel_10_Group_Id as string,\n\t\tIsCurrent as boolean,\n\t\tDateCreated as timestamp,\n\t\tName as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> DimMMG\nsource(output(\n\t\tUser_Key as long,\n\t\tUser_Id as string,\n\t\tForename as string,\n\t\tSurname as string,\n\t\tFullname as string,\n\t\tIsCurrent as boolean,\n\t\tDateCreated as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> DimSalesperson\nsource(output(\n\t\tHour_key as long,\n\t\tHour as integer,\n\t\tDescription as string,\n\t\tDate_created as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> DimHour\nsource(output(\n\t\tDate_Key as long,\n\t\tDate as date,\n\t\tDay_of_Week as integer,\n\t\tFiscal_Year as integer,\n\t\tMonth_In_Year as integer,\n\t\tWeek_In_Year as integer,\n\t\tPeriod as integer,\n\t\tMonth_In_Period as integer,\n\t\tQuarter as integer,\n\t\tIsCurrent as boolean,\n\t\tDateCreated as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> DimDate\nsource(output(\n\t\tCurrency_Key as long,\n\t\tCurrency_Id as string,\n\t\tDescription as string,\n\t\tIsCurrent as boolean,\n\t\tDateCreated as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> DimCurrency\nsource(output(\n\t\tTender_Key as long,\n\t\ttender_id as string,\n\t\tTender_type as string,\n\t\tDescription as string,\n\t\tRegionKey as string,\n\t\tIsCurrent as boolean,\n\t\tDateCreated as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> DimTender\nsource(output(\n\t\tPromotion_Key as long,\n\t\tEnactorPromotionKey as string,\n\t\tPromotion_id as string,\n\t\tRegionKey as string,\n\t\tDescription as string,\n\t\tStart_Date as timestamp,\n\t\tEnd_Date as timestamp,\n\t\tIsCurrent as boolean,\n\t\tDateCreated as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> DimPromotion\nFlashSalesStagingFull filter(last_updated > toTimestamp($LastUpdatedDate,'yyyy-MM-dd HH:mm:ss')) ~> DataSinceLastUpdate\nDataSinceLastUpdate, DimLocationCurrent lookup(FlashSalesStagingFull@location_id == DimLocation@location_id,\n\tmultiple: false,\n\tpickup: 'any',\n\tbroadcast: 'auto')~> LookupLocation\nLookupLocation, DimMMGCurrent lookup(MMGroupKey == GroupKey,\n\tmultiple: false,\n\tpickup: 'any',\n\tbroadcast: 'auto')~> LookupMMG\nLookupPromotion select(mapColumn(\n\t\ttransaction_id,\n\t\ttransaction_number,\n\t\tterminal_number,\n\t\tcompleted_date_time,\n\t\tMMG_Key,\n\t\tSalesperson_Key = User_Key,\n\t\tSalesValueLocal,\n\t\tOrdersValueLocal = OrderValueLocal,\n\t\tReturnsValueLocal,\n\t\tVoidedValueLocal,\n\t\tPromoValueLocal,\n\t\tManualDiscValueLocal,\n\t\tPriceOverridesValueLocal,\n\t\ttax_value_local,\n\t\tSalesValueHome,\n\t\tOrdersValueHome = OrderValueHome,\n\t\tReturnsValueHome,\n\t\tVoidedValueHome,\n\t\tPromoValueHome,\n\t\tManualDiscValueHome,\n\t\tPriceOverridesValueHome,\n\t\ttax_value_home,\n\t\tSales_Quantity,\n\t\tOrders_Quantity,\n\t\tReturns_Quantity,\n\t\titem_voided,\n\t\ttransaction_voided,\n\t\tCostValueHome = TotalCostValueHome,\n\t\tHour_key,\n\t\tline_number,\n\t\tLocation_Key,\n\t\tTrade_Date_Key = Date_Key,\n\t\tTender_Key,\n\t\tCurrency_Key,\n\t\tPromotion_Key\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> SelectColumns\nDimLocation filter(IsCurrent==true()) ~> DimLocationCurrent\nDimMMG filter(IsCurrent==true()) ~> DimMMGCurrent\nLookupMMG, DimSalespersonCurrent lookup(Salesperson == DimSalesperson@User_Id,\n\tmultiple: false,\n\tpickup: 'any',\n\tbroadcast: 'auto')~> LookupSalesperson\nDimSalesperson filter(IsCurrent==true()) ~> DimSalespersonCurrent\nLookupSalesperson, DimHour lookup(hour(completed_date_time) == Hour,\n\tmultiple: false,\n\tpickup: 'any',\n\tbroadcast: 'auto')~> LookupHour\nSelectColumns derive(line_number = iifNull(line_number,-1),\n\t\tLocation_Key = iifNull(Location_Key, -1),\n\t\tSalesperson_Key = iifNull(Salesperson_Key, -1)) ~> UpdateNullValues\nDimDate filter(IsCurrent==true()) ~> DimDateCurrent\nLookupHour, DimDateCurrent lookup(tradedate == Date,\n\tmultiple: false,\n\tpickup: 'any',\n\tbroadcast: 'auto')~> LookupDate\nDimCurrency filter(IsCurrent==true()) ~> DimCurrencyCurrent\nDimTender filter(IsCurrent==true()) ~> DimTenderCurrent\nLookupDate, DimTenderCurrent lookup(main_tender_id == tender_id\n\t&& main_tender_regionKey == RegionKey,\n\tmultiple: false,\n\tpickup: 'any',\n\tbroadcast: 'auto')~> LookupTender\nLookupTender, DimCurrencyCurrent lookup(base_currency_id == Currency_Id,\n\tmultiple: false,\n\tpickup: 'any',\n\tbroadcast: 'auto')~> LookupCurrency\nDimPromotion filter(IsCurrent==true()) ~> DimPromotionCurrent\nLookupCurrency, DimPromotionCurrent lookup(main_promotion_id == Promotion_id\n\t&& main_promotion_regionKey == DimPromotion@RegionKey,\n\tmultiple: false,\n\tpickup: 'any',\n\tbroadcast: 'auto')~> LookupPromotion\nUpdateNullValues sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tinput(\n\t\ttransaction_id as string,\n\t\tline_number as integer,\n\t\tLocation_Key as long,\n\t\tterminal_number as long,\n\t\tCompleted_DateTime as timestamp,\n\t\tTrade_Date_Key as long,\n\t\tMMG_Key as long,\n\t\tSalesperson_Key as long,\n\t\tSalesValueLocal as decimal(17,6),\n\t\tOrdersValueLocal as decimal(17,6),\n\t\tReturnsValueLocal as decimal(17,6),\n\t\tVoidedValueLocal as decimal(17,6),\n\t\tPromoValueLocal as decimal(17,6),\n\t\tManualDiscValueLocal as decimal(17,6),\n\t\tPriceOverridesValueLocal as decimal(17,6),\n\t\ttax_value_local as decimal(17,6),\n\t\tSalesValueHome as decimal(17,6),\n\t\tOrdersValueHome as decimal(17,6),\n\t\tReturnsValueHome as decimal(17,6),\n\t\tVoidedValueHome as decimal(17,6),\n\t\tPromoValueHome as decimal(17,6),\n\t\tManualDiscValueHome as decimal(17,6),\n\t\tPriceOverridesValueHome as decimal(17,6),\n\t\ttax_value_home as decimal(17,6),\n\t\tSales_Quantity as double,\n\t\tOrders_Quantity as double,\n\t\tReturns_Quantity as double,\n\t\tItem_Voided as boolean,\n\t\tTransaction_Voided as boolean,\n\t\tCostValueHome as decimal(17,6),\n\t\tHour_Key as long,\n\t\tTender_Key as long,\n\t\tCurrency_Key as long,\n\t\tPromotion_Key as long\n\t),\n\tdeletable:false,\n\tinsertable:true,\n\tupdateable:false,\n\tupsertable:false,\n\tformat: 'table',\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\terrorHandlingOption: 'stopOnFirstError',\n\tmapColumn(\n\t\ttransaction_id,\n\t\tline_number,\n\t\tLocation_Key,\n\t\tterminal_number,\n\t\tSalesperson_Key,\n\t\tSalesValueLocal,\n\t\tOrdersValueLocal,\n\t\tReturnsValueLocal,\n\t\tVoidedValueLocal,\n\t\tPromoValueLocal,\n\t\tManualDiscValueLocal,\n\t\tPriceOverridesValueLocal,\n\t\ttax_value_local,\n\t\tSalesValueHome,\n\t\tOrdersValueHome,\n\t\tReturnsValueHome,\n\t\tVoidedValueHome,\n\t\tPromoValueHome,\n\t\tManualDiscValueHome,\n\t\tPriceOverridesValueHome,\n\t\ttax_value_home,\n\t\tSales_Quantity,\n\t\tOrders_Quantity,\n\t\tReturns_Quantity,\n\t\tItem_Voided = item_voided,\n\t\tTransaction_Voided = transaction_voided,\n\t\tCostValueHome,\n\t\tHour_Key = Hour_key,\n\t\tMMG_Key,\n\t\tTrade_Date_Key,\n\t\tCompleted_DateTime = completed_date_time,\n\t\tTender_Key,\n\t\tCurrency_Key,\n\t\tPromotion_Key\n\t)) ~> WriteToFactFlashSalesTable"
+		}
+	}
+}

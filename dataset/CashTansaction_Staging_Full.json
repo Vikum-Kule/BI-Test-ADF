@@ -1,0 +1,113 @@
+{
+	"name": "CashTansaction_Staging_Full",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "EnactorDW_Staging",
+			"type": "LinkedServiceReference",
+			"parameters": {
+				"ConnectionStringKey": {
+					"value": "@dataset().ConnectionStringKey",
+					"type": "Expression"
+				},
+				"KeyVault_URL": {
+					"value": "@dataset().KeyVault_URL",
+					"type": "Expression"
+				}
+			}
+		},
+		"parameters": {
+			"ConnectionStringKey": {
+				"type": "string",
+				"defaultValue": "EnactorBI-StagingDB-ConnectionString"
+			},
+			"KeyVault_URL": {
+				"type": "string",
+				"defaultValue": "https://PR-EVAL-BI-Key-Vault.vault.azure.net/"
+			}
+		},
+		"folder": {
+			"name": "Staging/Facts"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [
+			{
+				"name": "Transaction_Type",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Device_Id",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Location_Id",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Owner_Id",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Owner_Type",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "Session_Number",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "User_Id",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Transaction_Id",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Item_Index",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "Item_Type",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Tender_Id",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Value",
+				"type": "decimal",
+				"precision": 17,
+				"scale": 6
+			},
+			{
+				"name": "Date_Created",
+				"type": "datetime",
+				"precision": 23,
+				"scale": 3
+			},
+			{
+				"name": "Date_Created_Offset",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "Effective_Date",
+				"type": "date"
+			},
+			{
+				"name": "Effective_Date_Offset",
+				"type": "int",
+				"precision": 10
+			}
+		],
+		"typeProperties": {
+			"schema": "dbo",
+			"table": "vw_CashTansaction_Full"
+		}
+	}
+}

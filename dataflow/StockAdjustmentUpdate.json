@@ -1,0 +1,553 @@
+{
+	"name": "StockAdjustmentUpdate",
+	"properties": {
+		"folder": {
+			"name": "Fact Updates"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "StockAdjutment_Staging_Full",
+						"type": "DatasetReference"
+					},
+					"name": "StockAdjustmentStaging",
+					"description": "Import data from StockAdjustment_Staging_Full"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimLocation",
+						"type": "DatasetReference"
+					},
+					"name": "DimFromLocation"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimProduct",
+						"type": "DatasetReference"
+					},
+					"name": "DimProduct"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimInventoryType",
+						"type": "DatasetReference"
+					},
+					"name": "DimfromInventoryType"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimLocation",
+						"type": "DatasetReference"
+					},
+					"name": "DimToLocation"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimInventoryType",
+						"type": "DatasetReference"
+					},
+					"name": "DimtoInventoryType"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimStockledgerTransactionType",
+						"type": "DatasetReference"
+					},
+					"name": "DimfromStockledgerTrType"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimStockledgerTransactionType",
+						"type": "DatasetReference"
+					},
+					"name": "DimtoStockledgerTrType"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimUser",
+						"type": "DatasetReference"
+					},
+					"name": "DimUser"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimReason",
+						"type": "DatasetReference"
+					},
+					"name": "DimReason"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimDate",
+						"type": "DatasetReference"
+					},
+					"name": "DimDate",
+					"description": "Import data from DimDate"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "FactStockAdjustment",
+						"type": "DatasetReference"
+					},
+					"name": "WriteToFactStockAdjustment"
+				}
+			],
+			"transformations": [
+				{
+					"name": "DataSinceLastUpdate"
+				},
+				{
+					"name": "LookupProduct"
+				},
+				{
+					"name": "DimFromLocationCurrent"
+				},
+				{
+					"name": "DimProductCurrent"
+				},
+				{
+					"name": "DimfromInventoryTypeCurrent"
+				},
+				{
+					"name": "LookupFromLocation"
+				},
+				{
+					"name": "LookupFromInventoryType"
+				},
+				{
+					"name": "SelectColumns"
+				},
+				{
+					"name": "lookupToLocation"
+				},
+				{
+					"name": "LookupToInventoryType"
+				},
+				{
+					"name": "DimToLocationCurrent"
+				},
+				{
+					"name": "DimtoInventoryTypeCurrent"
+				},
+				{
+					"name": "lookupFromStockledgerTrType"
+				},
+				{
+					"name": "DimfromStockledgerTrTypeCurrent"
+				},
+				{
+					"name": "DimtoStockledgerTrTypeCurrent"
+				},
+				{
+					"name": "lookupToStockledgerTrType"
+				},
+				{
+					"name": "DimUserCurrent"
+				},
+				{
+					"name": "lookupUser"
+				},
+				{
+					"name": "DimReasonCurrent"
+				},
+				{
+					"name": "lookupReason"
+				},
+				{
+					"name": "UpdateAdjustmentType"
+				},
+				{
+					"name": "DimDateCurrent"
+				},
+				{
+					"name": "lookupDate"
+				}
+			],
+			"scriptLines": [
+				"parameters{",
+				"     LastUpdatedDate as string ('2000-01-01 00:00:00')",
+				"}",
+				"source(output(",
+				"          Stock_Adjustment_Id as string,",
+				"          Created_By_User_Id as string,",
+				"          From_Location_Id as string,",
+				"          To_Location_Id as string,",
+				"          From_Inventory_Type as string,",
+				"          To_Inventory_Type as string,",
+				"          From_Stock_Ledger_Trans_Type as string,",
+				"          To_Stock_Ledger_Trans_Type as string,",
+				"          Status as string,",
+				"          Reason_Code_Id as string,",
+				"          Product_Id as string,",
+				"          Qty as double,",
+				"          Reason_Id as string,",
+				"          last_updated as timestamp,",
+				"          StockAdustment_date as date",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> StockAdjustmentStaging",
+				"source(output(",
+				"          Location_Key as long,",
+				"          location_id as string,",
+				"          Description as string,",
+				"          Town as string,",
+				"          CountryCode as string,",
+				"          CountryDescription as string,",
+				"          Region1 as string,",
+				"          Region1Name as string,",
+				"          Region2 as string,",
+				"          Region2Name as string,",
+				"          Region3 as string,",
+				"          Region3Name as string,",
+				"          IsCurrent as boolean,",
+				"          DateCreated as timestamp",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> DimFromLocation",
+				"source(output(",
+				"          Product_Key as long,",
+				"          product_id as string,",
+				"          Type as string,",
+				"          Description as string,",
+				"          Long_description as string,",
+				"          Image_URL as string,",
+				"          IsCurrent as boolean,",
+				"          DateCreated as timestamp",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> DimProduct",
+				"source(output(",
+				"          Inventory_Type_Key as long,",
+				"          Inventory_Type as string,",
+				"          Description as string,",
+				"          IsCurrent as boolean,",
+				"          DateCreated as timestamp",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> DimfromInventoryType",
+				"source(output(",
+				"          Location_Key as long,",
+				"          location_id as string,",
+				"          Description as string,",
+				"          Town as string,",
+				"          CountryCode as string,",
+				"          CountryDescription as string,",
+				"          Region1 as string,",
+				"          Region1Name as string,",
+				"          Region2 as string,",
+				"          Region2Name as string,",
+				"          Region3 as string,",
+				"          Region3Name as string,",
+				"          location_type as string,",
+				"          IsCurrent as boolean,",
+				"          DateCreated as timestamp",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> DimToLocation",
+				"source(output(",
+				"          Inventory_Type_Key as long,",
+				"          Inventory_Type as string,",
+				"          Description as string,",
+				"          IsCurrent as boolean,",
+				"          DateCreated as timestamp",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> DimtoInventoryType",
+				"source(output(",
+				"          Transaction_Type_Key as long,",
+				"          Transaction_Type as string,",
+				"          Description as string,",
+				"          Data_Type_Id as string,",
+				"          IsCurrent as boolean,",
+				"          DateCreated as timestamp,",
+				"          Sign as integer",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> DimfromStockledgerTrType",
+				"source(output(",
+				"          Transaction_Type_Key as long,",
+				"          Transaction_Type as string,",
+				"          Description as string,",
+				"          Data_Type_Id as string,",
+				"          IsCurrent as boolean,",
+				"          DateCreated as timestamp,",
+				"          Sign as integer",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> DimtoStockledgerTrType",
+				"source(output(",
+				"          User_Key as long,",
+				"          User_Id as string,",
+				"          Forename as string,",
+				"          Surname as string,",
+				"          Fullname as string,",
+				"          IsCurrent as boolean,",
+				"          DateCreated as timestamp",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> DimUser",
+				"source(output(",
+				"          Reason_Key as long,",
+				"          EnactorReasonKey as string,",
+				"          Reason_Id as string,",
+				"          RegionKey as string,",
+				"          Reason_Type as string,",
+				"          Description as string,",
+				"          IsCurrent as boolean,",
+				"          DateCreated as timestamp",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> DimReason",
+				"source(output(",
+				"          Date_Key as long,",
+				"          Date as date,",
+				"          Day_of_Week as integer,",
+				"          Fiscal_Year as integer,",
+				"          Month_In_Year as integer,",
+				"          Week_In_Year as integer,",
+				"          Period as integer,",
+				"          Month_In_Period as integer,",
+				"          Quarter as integer,",
+				"          IsCurrent as boolean,",
+				"          DateCreated as timestamp,",
+				"          Calendar_Year as integer,",
+				"          Calendar_Month as integer,",
+				"          Calendar_Week as integer",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> DimDate",
+				"StockAdjustmentStaging filter(last_updated > toTimestamp($LastUpdatedDate,'yyyy-MM-dd HH:mm:ss')) ~> DataSinceLastUpdate",
+				"DataSinceLastUpdate, DimProductCurrent lookup(StockAdjustmentStaging@Product_Id == DimProduct@product_id,",
+				"     multiple: false,",
+				"     pickup: 'any',",
+				"     broadcast: 'auto')~> LookupProduct",
+				"DimFromLocation filter(IsCurrent==true()) ~> DimFromLocationCurrent",
+				"DimProduct filter(IsCurrent==true()) ~> DimProductCurrent",
+				"DimfromInventoryType filter(IsCurrent==true()) ~> DimfromInventoryTypeCurrent",
+				"LookupProduct, DimFromLocationCurrent lookup(From_Location_Id == location_id,",
+				"     multiple: false,",
+				"     pickup: 'any',",
+				"     broadcast: 'auto')~> LookupFromLocation",
+				"lookupToLocation, DimfromInventoryTypeCurrent lookup(From_Inventory_Type == Inventory_Type,",
+				"     multiple: false,",
+				"     pickup: 'any',",
+				"     broadcast: 'auto')~> LookupFromInventoryType",
+				"UpdateAdjustmentType select(mapColumn(",
+				"          Stock_Adjustment_Id,",
+				"          Created_By_User_Id,",
+				"          From_Location_Id,",
+				"          To_Location_Id,",
+				"          From_Inventory_Type,",
+				"          To_Inventory_Type,",
+				"          From_Stock_Ledger_Trans_Type,",
+				"          To_Stock_Ledger_Trans_Type,",
+				"          Status,",
+				"          Reason_Code_Id,",
+				"          Product_Id = StockAdjustmentStaging@Product_Id,",
+				"          Qty,",
+				"          Reason_Id = StockAdjustmentStaging@Reason_Id,",
+				"          last_updated,",
+				"          Product_Key,",
+				"          product_id = DimProduct@product_id,",
+				"          Type,",
+				"          Description = DimProduct@Description,",
+				"          Long_description,",
+				"          Image_URL,",
+				"          IsCurrent = DimProduct@IsCurrent,",
+				"          DateCreated = DimProduct@DateCreated,",
+				"          from_Location_Key = DimFromLocation@Location_Key,",
+				"          from_location_id = DimFromLocation@location_id,",
+				"          Description = DimFromLocation@Description,",
+				"          Town = DimFromLocation@Town,",
+				"          CountryCode = DimFromLocation@CountryCode,",
+				"          CountryDescription = DimFromLocation@CountryDescription,",
+				"          Region1 = DimFromLocation@Region1,",
+				"          Region1Name = DimFromLocation@Region1Name,",
+				"          Region2 = DimFromLocation@Region2,",
+				"          Region2Name = DimFromLocation@Region2Name,",
+				"          Region3 = DimFromLocation@Region3,",
+				"          Region3Name = DimFromLocation@Region3Name,",
+				"          IsCurrent = DimFromLocation@IsCurrent,",
+				"          DateCreated = DimFromLocation@DateCreated,",
+				"          to_Location_Key = DimToLocation@Location_Key,",
+				"          to_location_id = DimToLocation@location_id,",
+				"          Description = DimToLocation@Description,",
+				"          Town = DimToLocation@Town,",
+				"          CountryCode = DimToLocation@CountryCode,",
+				"          CountryDescription = DimToLocation@CountryDescription,",
+				"          Region1 = DimToLocation@Region1,",
+				"          Region1Name = DimToLocation@Region1Name,",
+				"          Region2 = DimToLocation@Region2,",
+				"          Region2Name = DimToLocation@Region2Name,",
+				"          Region3 = DimToLocation@Region3,",
+				"          Region3Name = DimToLocation@Region3Name,",
+				"          location_type,",
+				"          IsCurrent = DimToLocation@IsCurrent,",
+				"          DateCreated = DimToLocation@DateCreated,",
+				"          from_Inventory_Type_Key = DimfromInventoryType@Inventory_Type_Key,",
+				"          from_Inventory_Type = DimfromInventoryType@Inventory_Type,",
+				"          Description = DimfromInventoryType@Description,",
+				"          IsCurrent = DimfromInventoryType@IsCurrent,",
+				"          DateCreated = DimfromInventoryType@DateCreated,",
+				"          to_Inventory_Type_Key = DimtoInventoryType@Inventory_Type_Key,",
+				"          to_Inventory_Type = DimtoInventoryType@Inventory_Type,",
+				"          Description = DimtoInventoryType@Description,",
+				"          IsCurrent = DimtoInventoryType@IsCurrent,",
+				"          DateCreated = DimtoInventoryType@DateCreated,",
+				"          from_Transaction_Type_Key = DimfromStockledgerTrType@Transaction_Type_Key,",
+				"          from_Transaction_Type = DimfromStockledgerTrType@Transaction_Type,",
+				"          Description = DimfromStockledgerTrType@Description,",
+				"          Data_Type_Id = DimfromStockledgerTrType@Data_Type_Id,",
+				"          IsCurrent = DimfromStockledgerTrType@IsCurrent,",
+				"          DateCreated = DimfromStockledgerTrType@DateCreated,",
+				"          Sign = DimfromStockledgerTrType@Sign,",
+				"          to_Transaction_Type_Key = DimtoStockledgerTrType@Transaction_Type_Key,",
+				"          to_Transaction_Type = DimtoStockledgerTrType@Transaction_Type,",
+				"          Description = DimtoStockledgerTrType@Description,",
+				"          Data_Type_Id = DimtoStockledgerTrType@Data_Type_Id,",
+				"          IsCurrent = DimtoStockledgerTrType@IsCurrent,",
+				"          DateCreated = DimtoStockledgerTrType@DateCreated,",
+				"          Sign = DimtoStockledgerTrType@Sign,",
+				"          User_Key,",
+				"          User_Id,",
+				"          Forename,",
+				"          Surname,",
+				"          Fullname,",
+				"          IsCurrent = DimUser@IsCurrent,",
+				"          DateCreated = DimUser@DateCreated,",
+				"          Reason_Key,",
+				"          EnactorReasonKey,",
+				"          Reason_Id = DimReason@Reason_Id,",
+				"          RegionKey,",
+				"          Reason_Type,",
+				"          Description = DimReason@Description,",
+				"          IsCurrent = DimReason@IsCurrent,",
+				"          DateCreated = DimReason@DateCreated,",
+				"          Date_Key,",
+				"          Date,",
+				"          Day_of_Week,",
+				"          Fiscal_Year,",
+				"          Month_In_Year,",
+				"          Week_In_Year,",
+				"          Period,",
+				"          Month_In_Period,",
+				"          Quarter,",
+				"          IsCurrent = DimDate@IsCurrent,",
+				"          DateCreated = DimDate@DateCreated,",
+				"          Calendar_Year,",
+				"          Calendar_Month,",
+				"          Calendar_Week,",
+				"          Adjustment_Type",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> SelectColumns",
+				"LookupFromLocation, DimToLocationCurrent lookup(To_Location_Id == DimToLocation@location_id,",
+				"     multiple: false,",
+				"     pickup: 'any',",
+				"     broadcast: 'auto')~> lookupToLocation",
+				"LookupFromInventoryType, DimtoInventoryTypeCurrent lookup(To_Inventory_Type == DimtoInventoryType@Inventory_Type,",
+				"     multiple: false,",
+				"     pickup: 'any',",
+				"     broadcast: 'auto')~> LookupToInventoryType",
+				"DimToLocation filter(IsCurrent==true()) ~> DimToLocationCurrent",
+				"DimtoInventoryType filter(IsCurrent==true()) ~> DimtoInventoryTypeCurrent",
+				"LookupToInventoryType, DimfromStockledgerTrTypeCurrent lookup(From_Stock_Ledger_Trans_Type == Transaction_Type,",
+				"     multiple: false,",
+				"     pickup: 'any',",
+				"     broadcast: 'auto')~> lookupFromStockledgerTrType",
+				"DimfromStockledgerTrType filter(IsCurrent==true()) ~> DimfromStockledgerTrTypeCurrent",
+				"DimtoStockledgerTrType filter(IsCurrent==true()) ~> DimtoStockledgerTrTypeCurrent",
+				"lookupFromStockledgerTrType, DimtoStockledgerTrTypeCurrent lookup(To_Stock_Ledger_Trans_Type == DimtoStockledgerTrType@Transaction_Type,",
+				"     multiple: false,",
+				"     pickup: 'any',",
+				"     broadcast: 'auto')~> lookupToStockledgerTrType",
+				"DimUser filter(IsCurrent==true()) ~> DimUserCurrent",
+				"lookupToStockledgerTrType, DimUserCurrent lookup(Created_By_User_Id == User_Id,",
+				"     multiple: false,",
+				"     pickup: 'any',",
+				"     broadcast: 'auto')~> lookupUser",
+				"DimReason filter(IsCurrent==true()) ~> DimReasonCurrent",
+				"lookupUser, DimReasonCurrent lookup(Reason_Code_Id == DimReason@Reason_Id,",
+				"     multiple: false,",
+				"     pickup: 'any',",
+				"     broadcast: 'auto')~> lookupReason",
+				"lookupDate derive(Adjustment_Type = case((To_Inventory_Type == 'COL'), 'Customer Collection', 'Stock Adjustment')) ~> UpdateAdjustmentType",
+				"DimDate filter(IsCurrent==true()) ~> DimDateCurrent",
+				"lookupReason, DimDateCurrent lookup(StockAdustment_date == Date,",
+				"     multiple: false,",
+				"     pickup: 'any',",
+				"     broadcast: 'auto')~> lookupDate",
+				"SelectColumns sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          Stock_Adjustment_Id as string,",
+				"          Created_By_User_Key as long,",
+				"          From_Location_Key as long,",
+				"          Adjustment_Type as string,",
+				"          To_Location_Key as long,",
+				"          From_Inventory_Type_Key as long,",
+				"          To_Inventory_Type_Key as long,",
+				"          From_Stock_Ledger_Trans_Type_key as long,",
+				"          To_Stock_Ledger_Trans_Type_key as long,",
+				"          Status as string,",
+				"          Reason_Code_Key as long,",
+				"          Product_Key as long,",
+				"          Qty as double,",
+				"          StockAdustment_Date_Key as long,",
+				"          DateCreated as timestamp",
+				"     ),",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError',",
+				"     mapColumn(",
+				"          Stock_Adjustment_Id,",
+				"          Created_By_User_Key = User_Key,",
+				"          From_Location_Key = from_Location_Key,",
+				"          Adjustment_Type,",
+				"          To_Location_Key = to_Location_Key,",
+				"          From_Inventory_Type_Key = from_Inventory_Type_Key,",
+				"          To_Inventory_Type_Key = to_Inventory_Type_Key,",
+				"          From_Stock_Ledger_Trans_Type_key = from_Transaction_Type_Key,",
+				"          To_Stock_Ledger_Trans_Type_key = to_Transaction_Type_Key,",
+				"          Status,",
+				"          Reason_Code_Key = Reason_Key,",
+				"          Product_Key,",
+				"          Qty,",
+				"          StockAdustment_Date_Key = Date_Key,",
+				"          DateCreated",
+				"     )) ~> WriteToFactStockAdjustment"
+			]
+		}
+	}
+}
